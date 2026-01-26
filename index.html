@@ -3,531 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>White Glyph</title>
+    <title>Mindful Flow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;700&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+        :root {
+            --bg-color: #ffffff;
+            --main-text: #1a1a1a;
+            --accent-soft: #f8f8f8;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fcfcfc;
-            color: #1a1a1a;
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--main-text);
             overflow: hidden;
             touch-action: manipulation;
         }
 
-        .glyph-container {
-            perspective: 1000px;
+        .fade-in {
+            animation: fadeIn 2.5s ease-out forwards;
         }
 
-        .glyph {
-            width: min(100px, 25vw);
-            height: min(100px, 25vw);
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 呼吸ガイドのアニメーション */
+        @keyframes breathing {
+            0%, 100% { transform: scale(1); opacity: 0.1; }
+            50% { transform: scale(1.6); opacity: 0.25; }
+        }
+
+        .anim-breathing {
+            animation: breathing 8s ease-in-out infinite;
+        }
+
+        /* 中央のタイマー円：内側から満たされる */
+        #inner-fill {
+            transition: transform 1s linear;
+            transform: scale(0);
+            transform-origin: center;
+        }
+
+        /* スライダーのカスタマイズ（少し操作しやすく） */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            height: 40px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            background: #eee;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
             border-radius: 50%;
-        }
-
-        .floating-text {
-            position: absolute;
-            pointer-events: none;
-            animation: floatUp 1.2s ease-out forwards;
-            font-weight: bold;
-            white-space: nowrap;
-            z-index: 10;
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(0); }
-            10% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-120px); }
-        }
-
-        .progress-bar {
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .progress-ghost {
-            transition: width 0.6s ease-out;
-            background: rgba(0,0,0,0.05);
-        }
-
-        .blur-overlay {
-            backdrop-filter: blur(8px);
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        .main-content {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 1rem;
-        }
-        
-        .calc-tag {
-            font-size: 10px;
-            font-weight: 400;
-            color: #888;
-            margin-left: 4px;
-        }
-
-        /* Home Screen Card Grid (Tiny) */
-        .card-slot {
-            aspect-ratio: 3/4;
-            transition: all 0.2s ease;
-            font-size: 7px;
-        }
-        .rank-1 { border-top: 2px solid #ddd; }
-        .rank-2 { border-top: 2px solid #fbbf24; }
-        .rank-3 { border-top: 2px solid #8b5cf6; }
-
-        /* Game Card Styles */
-        .hand-card {
-            width: 65px;
-            height: 90px;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #1a1a1a;
+            margin-top: -9px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            position: relative;
-        }
-        .hand-card.selected {
-            transform: translateY(-20px);
-            border: 2px solid #000;
-            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
     </style>
 </head>
-<body class="h-screen flex items-center justify-center">
+<body class="flex flex-col items-center justify-between min-h-screen p-10 pb-20">
 
-    <!-- Game Screen -->
-    <div id="game-ui" class="w-full max-w-4xl main-content hidden">
-        <div class="w-full flex justify-between items-start">
-            <div>
-                <p class="text-[9px] tracking-[0.3em] text-gray-400 uppercase">Layer</p>
-                <h1 id="round-display" class="text-2xl font-extralight">1</h1>
-            </div>
-            <div class="text-center">
-                <p id="current-score" class="text-3xl font-bold tracking-tighter">0</p>
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest">/ <span id="goal-display">50</span></p>
-            </div>
-            <div class="text-right">
-                <p class="text-[9px] tracking-[0.3em] text-gray-400 uppercase">Energy</p>
-                <h1 id="energy-display" class="text-2xl font-extralight">10</h1>
+    <!-- ヘッダー -->
+    <header class="w-full text-center space-y-4 mt-4 fade-in">
+        <h1 class="text-2xl font-light tracking-[0.4em] uppercase">Mindful Flow</h1>
+        <p id="status-text" class="text-sm text-gray-400 font-light tracking-widest transition-opacity duration-1000">心を静める準備</p>
+    </header>
+
+    <!-- メイン：ビジュアルタイマー -->
+    <div class="relative flex items-center justify-center w-full aspect-square max-w-sm">
+        <!-- 呼吸ガイド（背景で動く円） -->
+        <div id="breath-node" class="absolute w-48 h-48 bg-black rounded-full blur-3xl opacity-0 transition-opacity duration-1000"></div>
+        
+        <!-- 外側の枠線 -->
+        <div class="absolute w-64 h-64 md:w-80 md:h-80 border border-gray-100 rounded-full"></div>
+
+        <!-- 中央の満ちていく円 -->
+        <div id="inner-fill" class="absolute w-64 h-64 md:w-80 md:h-80 bg-black rounded-full opacity-[0.03]"></div>
+        
+        <!-- センタードット -->
+        <div class="w-2 h-2 bg-black rounded-full opacity-20"></div>
+    </div>
+
+    <!-- コントロール -->
+    <div class="w-full max-w-xs flex flex-col items-center space-y-16">
+        
+        <!-- 時間設定 -->
+        <div id="settings" class="w-full space-y-6 transition-all duration-1000">
+            <input type="range" id="time-slider" min="0.5" max="15" step="0.5" value="3" class="w-full">
+            <div class="flex justify-center">
+                <span id="set-time-label" class="text-xs text-gray-500 tracking-[0.2em] font-medium uppercase">3 MINUTES</span>
             </div>
         </div>
 
-        <div class="relative w-full h-1 bg-gray-100 rounded-full overflow-hidden my-2">
-            <div id="score-progress-ghost" class="progress-ghost absolute h-full w-0"></div>
-            <div id="score-progress" class="progress-bar relative h-full bg-black w-0"></div>
-        </div>
-
-        <div class="flex-grow flex flex-col items-center justify-center">
-            <div class="glyph-container relative">
-                <div id="main-glyph" class="glyph">
-                    <div id="energy-ring" class="absolute inset-0 border-2 border-black rounded-full opacity-10"></div>
-                    <p id="mult-display" class="text-xl font-bold">x1.0</p>
-                </div>
-                <div id="effect-layer" class="absolute inset-0 pointer-events-none" style="width: 100%; height: 100%;"></div>
-            </div>
-        </div>
-
-        <div class="w-full">
-            <div class="flex justify-between items-center mb-4">
-                <p class="text-[9px] tracking-[0.4em] text-gray-400 uppercase">Deck: <span id="game-deck-count">0</span></p>
-                <button id="play-hand-btn" onclick="game.playSelectedHand()" class="px-8 py-2 bg-black text-white text-[11px] font-bold tracking-widest rounded-full disabled:opacity-30 disabled:pointer-events-none">PLAY</button>
-            </div>
-            <div id="game-hand" class="flex justify-center gap-1 overflow-x-auto pb-4 h-32 items-end">
-                <!-- Cards will be drawn here -->
-            </div>
+        <!-- アクションボタン -->
+        <div class="flex flex-col items-center space-y-8">
+            <button id="start-btn" class="text-sm tracking-[0.5em] text-black border-b-2 border-transparent hover:border-black py-2 transition-all duration-700">
+                START
+            </button>
+            <button id="reset-btn" class="text-[10px] tracking-[0.3em] text-gray-300 uppercase opacity-0 pointer-events-none transition-all duration-1000">
+                Cancel Session
+            </button>
         </div>
     </div>
 
-    <!-- Base Menu Screen -->
-    <div id="base-menu" class="fixed inset-0 bg-white z-[60] flex flex-col p-4 sm:p-6 overflow-y-auto">
-        <div class="w-full max-w-5xl mx-auto flex flex-col h-full">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold tracking-tighter">WHITE GLYPH</h1>
-                <div class="text-right">
-                    <p class="text-[9px] text-gray-400 uppercase tracking-widest">Balance</p>
-                    <p id="menu-credits" class="text-xl font-bold">0 C</p>
-                </div>
-            </div>
-
-            <div class="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                    <h3 class="font-bold text-base">Expansion Pack</h3>
-                    <p class="text-[10px] text-gray-500">5 modules per pack</p>
-                </div>
-                <button id="buy-pack-btn" onclick="game.buyPack()" class="px-6 py-2 bg-black text-white text-[10px] font-bold tracking-widest rounded-full">
-                    BUY PACK (500 C)
-                </button>
-            </div>
-
-            <div class="mb-4 flex justify-between items-end">
-                <div>
-                    <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em]">Active Deck</p>
-                    <p id="deck-status" class="text-[9px] text-gray-500 uppercase mt-0.5">20 / 20 Modules</p>
-                </div>
-                <button onclick="game.openEditMenu()" class="text-[10px] font-bold uppercase tracking-[0.2em] border-b border-black pb-0.5">Edit Deck</button>
-            </div>
-            
-            <!-- Home: Show active deck, each card as individual slot -->
-            <div id="home-deck-grid" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5 mb-10"></div>
-
-            <div class="mt-auto pt-4 flex justify-center">
-                <button id="start-run-btn" onclick="game.startRun()" class="w-full max-w-xs py-4 bg-black text-white text-[11px] tracking-[0.5em] font-bold rounded-full uppercase shadow-lg disabled:opacity-20">Start Challenge</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Deck Edit Screen -->
-    <div id="edit-menu" class="fixed inset-0 bg-white z-[80] flex flex-col p-4 sm:p-6 overflow-y-auto hidden">
-        <div class="w-full max-w-5xl mx-auto flex flex-col h-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold tracking-tighter uppercase">Edit Deck</h2>
-                <button onclick="game.closeEditMenu()" class="text-[10px] font-bold tracking-widest uppercase px-4 py-2 border border-black rounded-full">Save & Close</button>
-            </div>
-            
-            <div class="mb-6">
-                <p class="text-[10px] text-gray-400 uppercase tracking-[0.3em] mb-2">Deck Configuration (<span id="edit-deck-count">0</span>/20)</p>
-                <div id="edit-collection-grid" class="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-1.5"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pack Opening Overlay -->
-    <div id="pack-overlay" class="fixed inset-0 blur-overlay flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-[90] p-6 text-center">
-        <h2 class="text-xl font-light tracking-widest mb-10 uppercase">New Modules</h2>
-        <div id="pack-results" class="flex flex-wrap justify-center gap-2 mb-12"></div>
-        <div class="flex flex-col gap-3 w-full max-w-xs">
-            <button id="rebuy-pack-btn-overlay" onclick="game.buyPack()" class="w-full py-3 bg-black text-white text-[10px] tracking-widest font-bold rounded-full">BUY AGAIN (500 C)</button>
-            <button onclick="game.closePack()" class="w-full py-3 border border-black text-[10px] tracking-widest font-bold rounded-full bg-white">BACK TO HOME</button>
-        </div>
-    </div>
-
-    <!-- Game Over / Reward Overlay -->
-    <div id="game-over-overlay" class="fixed inset-0 bg-white flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-[100] p-6 text-center">
-        <h2 class="text-3xl font-bold mb-4">RUN ENDED</h2>
-        <p id="run-summary" class="text-gray-500 mb-2"></p>
-        <p id="reward-amount" class="text-xl font-bold mb-12 text-black"></p>
-        <button onclick="game.backToBase()" class="w-full max-w-xs px-8 py-4 border border-black text-sm font-bold tracking-widest">RETURN TO BASE</button>
+    <!-- 完了オーバーレイ -->
+    <div id="overlay" class="fixed inset-0 bg-white flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-[2000ms] z-50 p-12 text-center">
+        <div class="w-2 h-2 bg-black rounded-full mb-10 animate-ping"></div>
+        <p class="text-base font-light tracking-[0.2em] text-gray-600 leading-relaxed">
+            一息つきました。<br>
+            新しい気持ちで始めましょう。
+        </p>
+        <button id="close-overlay" class="mt-20 text-[11px] tracking-[0.4em] text-gray-400 border border-gray-200 px-10 py-3 rounded-full uppercase">Return</button>
     </div>
 
     <script>
-        function formatNum(num) {
-            if (num < 1000000) return Math.floor(num).toLocaleString();
-            return num.toExponential(2).replace('+', '');
+        const innerFill = document.getElementById('inner-fill');
+        const statusText = document.getElementById('status-text');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const timeSlider = document.getElementById('time-slider');
+        const setTimeLabel = document.getElementById('set-time-label');
+        const settingsDiv = document.getElementById('settings');
+        const breathNode = document.getElementById('breath-node');
+        const overlay = document.getElementById('overlay');
+        const closeOverlay = document.getElementById('close-overlay');
+
+        let timeLeft = 180;
+        let totalTime = 180;
+        let timerInterval = null;
+        let isRunning = false;
+
+        function updateDisplay() {
+            // 時間の経過に合わせてスケールを0から1へ（満たしていく）
+            const progress = (totalTime - timeLeft) / totalTime;
+            innerFill.style.transform = `scale(${progress})`;
         }
 
-        const ALL_MODULES = [
-            { id: 'alpha_1', name: "Alpha I", type: "add", val: 5, rank: 1, weight: 70, desc: "Base +5", tags: ["Additive"] },
-            { id: 'beta_1', name: "Beta I", type: "add", val: 20, rank: 1, weight: 70, desc: "Base +20", tags: ["Additive"] },
-            { id: 'dual_1', name: "Dual I", type: "mult", val: 1.2, rank: 1, weight: 70, desc: "Dmg x1.2", tags: ["Multiplier"] },
-            { id: 'momentum_1', name: "Momentum I", type: "cond", rank: 1, weight: 70, desc: "+5% per card", func: (g) => { g.currentRunMult *= 1.05; return 0; }, tag: "x1.05", tags: ["Multiplier", "Scaling"] },
-            { id: 'stable', name: "Stable", type: "add", val: 10, rank: 1, weight: 70, desc: "Fixed +10", tags: ["Additive"] },
-            { id: 'alpha_2', name: "Alpha II", type: "add", val: 15, rank: 2, weight: 25, desc: "Base +15", tags: ["Additive"] },
-            { id: 'beta_2', name: "Beta II", type: "add", val: 50, rank: 2, weight: 25, desc: "Base +50", tags: ["Additive"] },
-            { id: 'dual_2', name: "Dual II", type: "mult", val: 1.5, rank: 2, weight: 25, desc: "Dmg x1.5", tags: ["Multiplier"] },
-            { id: 'momentum_2', name: "Momentum II", type: "cond", rank: 2, weight: 25, desc: "+12% per card", func: (g) => { g.currentRunMult *= 1.12; return 0; }, tag: "x1.12", tags: ["Multiplier", "Scaling"] },
-            { id: 'crit_2', name: "Critical II", type: "cond", rank: 2, weight: 25, desc: "20% chance: x5", func: (g) => Math.random() < 0.20 ? (g.currentRunMult *= 5, 0) : 0, tag: "CRIT!", tags: ["Multiplier", "Trigger"] },
-            { id: 'triple_3', name: "Triple III", type: "mult", val: 3.0, rank: 3, weight: 5, desc: "Dmg x3.0", tags: ["Multiplier"] },
-            { id: 'echo_3', name: "Echo III", type: "cond", rank: 3, weight: 5, desc: "50% chance: Redraw", func: (g) => { if(Math.random() < 0.5) setTimeout(() => g.drawCards(1), 100); return 0; }, tag: "DRAW", tags: ["Trigger", "Utility"] },
-            { id: 'overdrive', name: "Overdrive", type: "mult", val: 5.0, rank: 3, weight: 5, desc: "Dmg x5.0", tags: ["Multiplier"] }
-        ];
-
-        const game = {
-            round: 1, score: 0, goal: 50, credits: 500, energy: 10, maxEnergy: 10, baseDamage: 10,
-            inventory: [], deck: [], currentRunDeck: [], currentRunDiscard: [], hand: [], selectedHandIndices: [],
-            currentRunMult: 1.0, isRoundCleared: false,
-
-            init() {
-                const initialCards = [
-                    'alpha_1', 'alpha_1', 'alpha_1', 'alpha_1', 'beta_1', 'beta_1', 'beta_1', 'beta_1',
-                    'dual_1', 'dual_1', 'dual_1', 'dual_1', 'stable', 'stable', 'stable', 'stable',
-                    'alpha_2', 'beta_2', 'dual_2', 'momentum_2'
-                ];
-                this.inventory = [...initialCards];
-                this.deck = [...initialCards];
-                this.renderBase();
-            },
-
-            renderBase() {
-                document.getElementById('menu-credits').innerText = `${Math.floor(this.credits)} C`;
-                document.getElementById('deck-status').innerText = `${this.deck.length} / 20 Modules`;
-                document.getElementById('start-run-btn').disabled = this.deck.length < 5;
-                
-                const grid = document.getElementById('home-deck-grid');
-                grid.innerHTML = '';
-                
-                // Home Screen: Show active deck cards 1 by 1
-                this.deck.forEach((id) => {
-                    const m = ALL_MODULES.find(x => x.id === id);
-                    const slot = document.createElement('div');
-                    slot.className = `hand-card border bg-white rounded-lg p-2 flex flex-col justify-between rank-${m.rank} cursor-default`;
-                    slot.innerHTML = `
-                        <p class="text-[6px] text-gray-400 uppercase">R${m.rank}</p>
-                        <h4 class="font-bold text-[9px] leading-none">${m.name}</h4>
-                        <p class="text-[7px] text-gray-500 opacity-80 leading-tight">${m.desc}</p>
-                    `;
-                    grid.appendChild(slot);
-                });
-
-                // Fill empty slots up to 20 for visual feedback
-                for(let i=this.deck.length; i<20; i++) {
-                    const empty = document.createElement('div');
-                    empty.className = 'hand-card border border-dashed border-gray-200 rounded-lg bg-gray-50 cursor-default';
-                    grid.appendChild(empty);
-                }
-                
-                document.getElementById('buy-pack-btn').disabled = this.credits < 500;
-            },
-
-            openEditMenu() {
-                document.getElementById('edit-menu').classList.remove('hidden');
-                this.renderEditMenu();
-            },
-
-            closeEditMenu() {
-                document.getElementById('edit-menu').classList.add('hidden');
-                this.renderBase();
-            },
-
-            renderEditMenu() {
-                document.getElementById('edit-deck-count').innerText = this.deck.length;
-                const grid = document.getElementById('edit-collection-grid');
-                grid.innerHTML = '';
-                
-                const counts = {};
-                this.inventory.forEach(id => counts[id] = (counts[id] || 0) + 1);
-                
-                Object.keys(counts).sort((a,b) => {
-                    const ma = ALL_MODULES.find(x => x.id === a);
-                    const mb = ALL_MODULES.find(x => x.id === b);
-                    return ma.rank - mb.rank || ma.name.localeCompare(mb.name);
-                }).forEach(id => {
-                    const m = ALL_MODULES.find(x => x.id === id);
-                    const sel = this.deck.filter(x => x === id).length;
-                    const card = document.createElement('div');
-                    card.className = `card-slot border rounded p-1 flex flex-col justify-between cursor-pointer rank-${m.rank} ${sel > 0 ? 'bg-black text-white' : 'bg-white'}`;
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <span class="opacity-50 text-[6px]">R${m.rank}</span>
-                            <span class="font-bold text-[7px]">${sel}/${counts[id]}</span>
-                        </div>
-                        <p class="font-bold truncate text-[7px] leading-tight">${m.name}</p>
-                    `;
-                    card.onclick = () => {
-                        this.toggleDeck(id, counts[id]);
-                        this.renderEditMenu();
-                    };
-                    grid.appendChild(card);
-                });
-            },
-
-            toggleDeck(id, maxOwned) {
-                const cur = this.deck.filter(x => x === id).length;
-                if (cur < maxOwned && cur < 4 && this.deck.length < 20) {
-                    this.deck.push(id);
-                } else {
-                    const idx = this.deck.indexOf(id);
-                    if (idx > -1) this.deck.splice(idx, 1);
-                }
-            },
-
-            buyPack() {
-                if (this.credits < 500) return;
-                this.credits -= 500;
-                const results = [];
-                for (let i = 0; i < 5; i++) {
-                    const totalWeight = ALL_MODULES.reduce((s, m) => s + m.weight, 0);
-                    let rng = Math.random() * totalWeight;
-                    for (const m of ALL_MODULES) {
-                        if (rng < m.weight) {
-                            results.push(m);
-                            this.inventory.push(m.id);
-                            break;
-                        }
-                        rng -= m.weight;
-                    }
-                }
-                this.showPackOpening(results);
-                this.renderBase();
-            },
-
-            showPackOpening(results) {
-                const overlay = document.getElementById('pack-overlay');
-                const container = document.getElementById('pack-results');
-                container.innerHTML = '';
-                results.forEach((m, i) => {
-                    const el = document.createElement('div');
-                    el.className = `w-20 h-28 bg-white border border-gray-100 rounded-lg p-2 shadow-xl flex flex-col justify-between text-center opacity-0 transform translate-y-4 rank-${m.rank}`;
-                    el.style.transition = `all 0.3s ease ${i * 0.1}s`;
-                    el.innerHTML = `
-                        <p class="text-[5px] uppercase tracking-widest text-gray-400">R${m.rank}</p>
-                        <h4 class="font-bold text-[8px] truncate">${m.name}</h4>
-                        <p class="text-[7px] text-gray-500">${m.desc}</p>
-                    `;
-                    container.appendChild(el);
-                    setTimeout(() => { el.style.opacity = "1"; el.style.transform = "translateY(0)"; }, 50);
-                });
-                overlay.style.opacity = "1"; overlay.style.pointerEvents = "all";
-                document.getElementById('rebuy-pack-btn-overlay').disabled = this.credits < 500;
-            },
-
-            closePack() {
-                document.getElementById('pack-overlay').style.opacity = "0";
-                document.getElementById('pack-overlay').style.pointerEvents = "none";
-            },
-
-            startRun() {
-                if (this.deck.length < 5) return;
-                this.round = 1; this.score = 0; this.goal = 50; this.energy = 10;
-                this.isRoundCleared = false; this.currentRunMult = 1.0;
-                this.currentRunDeck = [...this.deck].sort(() => Math.random() - 0.5);
-                this.currentRunDiscard = [];
-                this.hand = []; this.selectedHandIndices = [];
-                document.getElementById('base-menu').classList.add('hidden');
-                document.getElementById('game-ui').classList.remove('hidden');
-                this.drawCards(5);
-                this.updateUI();
-            },
-
-            drawCards(count) {
-                for (let i = 0; i < count; i++) {
-                    if (this.currentRunDeck.length === 0 && this.currentRunDiscard.length > 0) {
-                        this.currentRunDeck = [...this.currentRunDiscard].sort(() => Math.random() - 0.5);
-                        this.currentRunDiscard = [];
-                    }
-                    if (this.currentRunDeck.length > 0 && this.hand.length < 5) {
-                        this.hand.push(this.currentRunDeck.shift());
-                    }
-                }
-                this.renderHand();
-                document.getElementById('game-deck-count').innerText = this.currentRunDeck.length;
-            },
-
-            renderHand() {
-                const container = document.getElementById('game-hand');
-                container.innerHTML = '';
-                this.hand.forEach((id, index) => {
-                    const m = ALL_MODULES.find(x => x.id === id);
-                    const isSelected = this.selectedHandIndices.includes(index);
-                    const el = document.createElement('div');
-                    el.className = `hand-card border bg-white rounded-lg p-2 flex flex-col justify-between rank-${m.rank} ${isSelected ? 'selected' : ''}`;
-                    el.innerHTML = `
-                        <p class="text-[6px] text-gray-400 uppercase">R${m.rank}</p>
-                        <h4 class="font-bold text-[9px] leading-none">${m.name}</h4>
-                        <p class="text-[7px] text-gray-500 opacity-80 leading-tight">${m.desc}</p>
-                    `;
-                    el.onclick = () => this.toggleCardSelection(index);
-                    container.appendChild(el);
-                });
-                document.getElementById('play-hand-btn').disabled = this.selectedHandIndices.length === 0;
-            },
-
-            toggleCardSelection(index) {
-                const pos = this.selectedHandIndices.indexOf(index);
-                if (pos > -1) this.selectedHandIndices.splice(pos, 1);
-                else this.selectedHandIndices.push(index);
-                this.renderHand();
-            },
-
-            playSelectedHand() {
-                if (this.isRoundCleared || this.energy <= 0 || this.selectedHandIndices.length === 0) return;
-                this.energy--;
-                const activeTags = [];
-                let addedDmg = 0;
-
-                const sortedIndices = [...this.selectedHandIndices].sort((a,b) => b-a);
-                const playedCards = this.selectedHandIndices.map(idx => this.hand[idx]);
-
-                playedCards.forEach(id => {
-                    const m = ALL_MODULES.find(x => x.id === id);
-                    if (m.type === 'add') addedDmg += m.val;
-                    else if (m.type === 'mult') { this.currentRunMult *= m.val; activeTags.push(`x${m.val}`); }
-                    else if (m.func) {
-                        const val = m.func(this);
-                        addedDmg += val;
-                        if (m.tag) activeTags.push(m.tag);
-                    }
-                });
-
-                sortedIndices.forEach(idx => this.hand.splice(idx, 1));
-                this.currentRunDiscard.push(...playedCards);
-                this.selectedHandIndices = [];
-
-                const finalDmg = (this.baseDamage + addedDmg) * this.currentRunMult;
-                
-                if (this.score + finalDmg >= this.goal) {
-                    this.score = this.goal; this.isRoundCleared = true;
-                    this.spawnFloater(finalDmg, activeTags);
-                    this.updateUI();
-                    setTimeout(() => this.nextRound(), 600);
-                } else {
-                    this.score += finalDmg; this.spawnFloater(finalDmg, activeTags);
-                    this.drawCards(5); this.updateUI();
-                    if (this.energy <= 0) setTimeout(() => this.gameOver(), 600);
-                }
-            },
-
-            nextRound() {
-                this.round++; this.score = 0; this.energy = this.maxEnergy;
-                this.currentRunMult = 1.0; this.isRoundCleared = false;
-                this.currentRunDeck = [...this.deck].sort(() => Math.random() - 0.5);
-                this.currentRunDiscard = [];
-                this.hand = []; this.selectedHandIndices = [];
-                this.goal = Math.floor(50 * Math.pow(2.8, this.round - 1));
-                this.drawCards(5); this.updateUI();
-            },
-
-            gameOver() {
-                const reward = this.round * 200 + (this.round > 2 ? 400 : 0);
-                this.lastRunReward = reward;
-                const overlay = document.getElementById('game-over-overlay');
-                document.getElementById('run-summary').innerText = `Finished at Layer ${this.round}`;
-                document.getElementById('reward-amount').innerText = `+${reward} C Earned`;
-                overlay.style.opacity = "1"; overlay.style.pointerEvents = "all";
-            },
-
-            backToBase() {
-                this.credits += this.lastRunReward;
-                document.getElementById('game-over-overlay').style.opacity = "0";
-                document.getElementById('game-over-overlay').style.pointerEvents = "none";
-                document.getElementById('game-ui').classList.add('hidden');
-                document.getElementById('base-menu').classList.remove('hidden');
-                this.renderBase();
-            },
-
-            updateUI() {
-                document.getElementById('current-score').innerText = formatNum(this.score);
-                document.getElementById('goal-display').innerText = formatNum(this.goal);
-                document.getElementById('round-display').innerText = this.round;
-                document.getElementById('energy-display').innerText = this.energy;
-                document.getElementById('mult-display').innerText = `x${this.currentRunMult.toFixed(1)}`;
-                const ratio = Math.min(1, this.score / this.goal);
-                document.getElementById('score-progress').style.width = `${ratio * 100}%`;
-                document.getElementById('score-progress-ghost').style.width = `${ratio * 100}%`;
-            },
-
-            spawnFloater(val, tags) {
-                const layer = document.getElementById('effect-layer');
-                const el = document.createElement('div');
-                el.className = 'floating-text flex flex-col items-center';
-                let tagsHtml = tags.map(t => `<span class="calc-tag">${t}</span>`).join('');
-                el.innerHTML = `<div><span class="text-base">+${formatNum(val)}</span></div><div class="flex gap-1 opacity-60">${tagsHtml}</div>`;
-                const rect = document.getElementById('main-glyph').getBoundingClientRect();
-                el.style.left = `${rect.width/2}px`; el.style.top = `${rect.height/2}px`;
-                el.style.transform = 'translateX(-50%)';
-                layer.appendChild(el); setTimeout(() => el.remove(), 1200);
+        timeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            totalTime = val * 60;
+            timeLeft = totalTime;
+            if (val === 0.5) {
+                setTimeLabel.textContent = `30 SECONDS`;
+            } else {
+                setTimeLabel.textContent = `${val} ${val == 1 ? 'MINUTE' : 'MINUTES'}`;
             }
-        };
+            updateDisplay();
+        });
 
-        window.onload = () => game.init();
+        function toggleTimer() {
+            if (isRunning) {
+                // 一時停止
+                clearInterval(timerInterval);
+                startBtn.textContent = 'RESUME';
+                statusText.textContent = '小休止';
+                breathNode.classList.remove('anim-breathing');
+                isRunning = false;
+            } else {
+                // 開始
+                isRunning = true;
+                startBtn.textContent = 'PAUSE';
+                statusText.textContent = 'ゆっくりと呼吸を';
+                
+                resetBtn.classList.remove('opacity-0', 'pointer-events-none');
+                settingsDiv.style.opacity = '0';
+                settingsDiv.style.pointerEvents = 'none';
+                
+                // 呼吸ガイド起動
+                breathNode.classList.add('opacity-100', 'anim-breathing');
+
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    if (timeLeft <= 0) completeTimer();
+                }, 1000);
+            }
+        }
+
+        function completeTimer() {
+            clearInterval(timerInterval);
+            overlay.classList.remove('pointer-events-none');
+            overlay.classList.add('opacity-100');
+            resetTimer();
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            timeLeft = totalTime;
+            startBtn.textContent = 'START';
+            statusText.textContent = '心を静める準備';
+            resetBtn.classList.add('opacity-0', 'pointer-events-none');
+            settingsDiv.style.opacity = '1';
+            settingsDiv.style.pointerEvents = 'auto';
+            breathNode.classList.remove('opacity-100', 'anim-breathing');
+            updateDisplay();
+        }
+
+        startBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        closeOverlay.addEventListener('click', () => {
+            overlay.classList.add('opacity-0');
+            overlay.classList.add('pointer-events-none');
+        });
+
+        updateDisplay();
     </script>
 </body>
 </html>
