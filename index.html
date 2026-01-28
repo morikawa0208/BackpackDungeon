@@ -550,18 +550,49 @@
         // --- Dungeon / Map Logic ---
         function createMaps() {
             return [
-                { name: 'Woods', nodes: buildNodes([MAP_TYPES.NORMAL, MAP_TYPES.NORMAL, MAP_TYPES.SHOP, MAP_TYPES.NORMAL, MAP_TYPES.BOSS]) },
-                { name: 'Ruins', nodes: buildNodes([MAP_TYPES.NORMAL, MAP_TYPES.TREASURE, MAP_TYPES.NAMED, MAP_TYPES.SHOP, MAP_TYPES.BOSS]) },
-                { name: 'Abyss', nodes: buildNodes([MAP_TYPES.NORMAL, MAP_TYPES.NAMED, MAP_TYPES.TREASURE, MAP_TYPES.BOSS]) }
+                { name: 'Woods', size: 3, nodes: buildNodes(3, [
+                    { x: 0, y: 2, type: MAP_TYPES.SHOP },
+                    { x: 2, y: 0, type: MAP_TYPES.TREASURE },
+                    { x: 1, y: 2, type: MAP_TYPES.NAMED },
+                    { x: 2, y: 2, type: MAP_TYPES.BOSS }
+                ]) },
+                { name: 'Ruins', size: 4, nodes: buildNodes(4, [
+                    { x: 0, y: 3, type: MAP_TYPES.SHOP },
+                    { x: 3, y: 0, type: MAP_TYPES.TREASURE },
+                    { x: 2, y: 1, type: MAP_TYPES.NAMED },
+                    { x: 3, y: 3, type: MAP_TYPES.BOSS }
+                ]) },
+                { name: 'Abyss', size: 4, nodes: buildNodes(4, [
+                    { x: 0, y: 3, type: MAP_TYPES.TREASURE },
+                    { x: 3, y: 0, type: MAP_TYPES.NAMED },
+                    { x: 1, y: 2, type: MAP_TYPES.SHOP },
+                    { x: 3, y: 3, type: MAP_TYPES.BOSS }
+                ]) }
             ];
         }
 
-        function buildNodes(types) {
-            return types.map((type, index) => ({
-                type,
-                unlocked: index === 0,
-                cleared: false
-            }));
+        function buildNodes(size, specials) {
+            const startX = Math.floor(size / 2);
+            const startY = Math.floor(size / 2);
+            const nodes = [];
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    nodes.push({
+                        x,
+                        y,
+                        type: MAP_TYPES.NORMAL,
+                        unlocked: x === startX && y === startY,
+                        cleared: false
+                    });
+                }
+            }
+            specials.forEach(({ x, y, type }) => {
+                const idx = y * size + x;
+                if (nodes[idx]) {
+                    nodes[idx].type = type;
+                }
+            });
+            return nodes;
         }
 
         function initDungeon() {
@@ -584,8 +615,8 @@
         function getFloorText() {
             const map = getCurrentMap();
             if (!map) return 'Dungeon Select';
-            const nodeIndex = state.dungeon.currentNodeIndex !== null ? state.dungeon.currentNodeIndex + 1 : '-';
-            return `Map ${state.dungeon.currentMapIndex + 1}: ${map.name} (${nodeIndex}/${map.nodes.length})`;
+            const clearedCount = map.nodes.filter(node => node.cleared).length;
+            return `Map ${state.dungeon.currentMapIndex + 1}: ${map.name} (${clearedCount}/${map.nodes.length})`;
         }
 
         function openDungeonPanel() {
@@ -629,20 +660,22 @@
             content.appendChild(header);
 
             const nodeWrap = document.createElement('div');
-            nodeWrap.className = 'grid grid-cols-2 gap-3';
+            nodeWrap.className = 'grid gap-3';
+            nodeWrap.style.gridTemplateColumns = `repeat(${map.size}, minmax(0, 1fr))`;
 
             map.nodes.forEach((node, index) => {
                 const isCurrent = index === state.dungeon.currentNodeIndex;
                 const btn = document.createElement('button');
                 const active = node.unlocked && !node.cleared;
+                const statusText = node.cleared ? 'CLEAR' : node.unlocked ? 'OPEN' : 'LOCK';
                 btn.className = `border rounded-xl p-3 text-left space-y-1 ${active ? 'bg-white border-gray-200 hover:bg-gray-50' : 'bg-gray-50 border-gray-100 text-gray-300'} ${isCurrent ? 'ring-2 ring-black' : ''}`;
                 btn.disabled = !active;
                 btn.innerHTML = `
                     <div class="flex items-center justify-between text-xs font-semibold">
                         <span>${getNodeLabel(node.type)}</span>
-                        <span>${node.cleared ? 'CLEAR' : node.unlocked ? 'OPEN' : 'LOCK'}</span>
+                        <span>${statusText}</span>
                     </div>
-                    <div class="text-[10px] text-gray-400">マス ${index + 1}</div>
+                    <div class="text-[10px] text-gray-400">座標 (${node.x + 1},${node.y + 1})</div>
                 `;
                 btn.onclick = () => startNode(index);
                 nodeWrap.appendChild(btn);
@@ -671,8 +704,10 @@
             state.dungeon.currentMapIndex = index;
             state.dungeon.currentNodeIndex = null;
             const map = getCurrentMap();
-            map.nodes.forEach((node, nodeIndex) => {
-                node.unlocked = nodeIndex === 0;
+            const startX = Math.floor(map.size / 2);
+            const startY = Math.floor(map.size / 2);
+            map.nodes.forEach(node => {
+                node.unlocked = node.x === startX && node.y === startY;
                 node.cleared = false;
             });
             updateStats();
@@ -684,7 +719,7 @@
             const node = map?.nodes[index];
             if (!node || !node.unlocked || node.cleared) return;
             state.dungeon.currentNodeIndex = index;
-            state.floor = (state.dungeon.currentMapIndex * 5) + index + 1;
+            state.floor = (state.dungeon.currentMapIndex * 10) + index + 1;
             document.getElementById('dungeon-panel').classList.add('hidden');
             document.getElementById('enemy-container').innerHTML = '';
             state.enemies = [];
@@ -720,10 +755,7 @@
             const node = getCurrentNode();
             if (!map || !node) return;
             node.cleared = true;
-            const nextNode = map.nodes[state.dungeon.currentNodeIndex + 1];
-            if (nextNode) {
-                nextNode.unlocked = true;
-            }
+            unlockAdjacentNodes(map, node);
             if (nodeType === MAP_TYPES.BOSS) {
                 handleBossClear();
                 return;
@@ -753,12 +785,33 @@
             state.dungeon.currentMapIndex += 1;
             state.dungeon.currentNodeIndex = null;
             const map = getCurrentMap();
-            map.nodes.forEach((node, index) => {
-                node.unlocked = index === 0;
+            const startX = Math.floor(map.size / 2);
+            const startY = Math.floor(map.size / 2);
+            map.nodes.forEach(node => {
+                node.unlocked = node.x === startX && node.y === startY;
                 node.cleared = false;
             });
             updateStats();
             openDungeonPanel();
+        }
+
+        function unlockAdjacentNodes(map, node) {
+            const directions = [
+                { x: 0, y: -1 },
+                { x: 0, y: 1 },
+                { x: -1, y: 0 },
+                { x: 1, y: 0 }
+            ];
+            directions.forEach(dir => {
+                const nx = node.x + dir.x;
+                const ny = node.y + dir.y;
+                if (nx < 0 || ny < 0 || nx >= map.size || ny >= map.size) return;
+                const idx = ny * map.size + nx;
+                const target = map.nodes[idx];
+                if (target && !target.cleared) {
+                    target.unlocked = true;
+                }
+            });
         }
 
         function getNodeResultText(nodeType) {
