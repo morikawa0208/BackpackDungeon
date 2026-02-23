@@ -168,6 +168,37 @@
       gap: 6px;
     }
 
+    .targets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    button.target {
+      border: 1px solid #41508b;
+      border-radius: 10px;
+      padding: 8px 6px;
+      background: linear-gradient(180deg, #2a335e 0%, #1f2747 100%);
+      color: #f2f6ff;
+      font-size: 11px;
+      font-weight: 700;
+      display: grid;
+      gap: 4px;
+      place-items: center;
+      min-height: 52px;
+    }
+
+    button.target.selected {
+      border-color: #7bc3ff;
+      box-shadow: 0 0 0 1px rgba(123, 195, 255, 0.45) inset;
+    }
+
+    button.target.disabled {
+      opacity: 0.45;
+      filter: grayscale(0.4);
+      border-style: dashed;
+    }
+
     button.skill {
       border: 1px solid #41508b;
       border-radius: 10px;
@@ -230,7 +261,6 @@
 
     <section class="middle">
       <div class="state">
-        <span id="battleState"><i class="fa-solid fa-hourglass-half"></i> 戦闘中</span>
         <span><i class="fa-solid fa-users"></i> 敵 <span id="aliveEnemyCount">0</span>/3</span>
       </div>
       <div id="log" class="log"></div>
@@ -247,6 +277,8 @@
         <div class="bar"><div id="playerCp" class="fill cp"></div></div>
       </div>
 
+      <div class="targets" id="targetButtons"></div>
+
       <div class="skills" id="manualSkills"></div>
 
       <div class="auto">
@@ -258,13 +290,13 @@
 
   <script>
     const SKILLS = {
-      basic: { id: "basic", name: "通常斬り", icon: "fa-solid fa-sword", cpCost: 0, cooldown: 0.3, power: 1.0 },
-      heavy: { id: "heavy", name: "強打", icon: "fa-solid fa-hammer", cpCost: 20, cooldown: 1.2, power: 1.7 },
-      twin: { id: "twin", name: "二連撃", icon: "fa-solid fa-bolt", cpCost: 16, cooldown: 1.8, power: 0.95, hits: 2 },
-      puncture: { id: "puncture", name: "貫通", icon: "fa-solid fa-crosshairs", cpCost: 26, cooldown: 2.4, power: 2.0 },
-      burst: { id: "burst", name: "気合", icon: "fa-solid fa-fire", cpCost: 30, cooldown: 3.0, power: 2.4 },
-      guardBreak: { id: "guardBreak", name: "崩し", icon: "fa-solid fa-shield-halved", cpCost: 18, cooldown: 1.6, power: 1.4 },
-      quick: { id: "quick", name: "速打", icon: "fa-solid fa-wind", cpCost: 12, cooldown: 1.0, power: 1.15 }
+      basic: { id: "basic", name: "通常斬り", icon: "fa-solid fa-sword", useCp: 0, gainCp: 7, cooldown: 0.3, power: 1.0 },
+      heavy: { id: "heavy", name: "強打", icon: "fa-solid fa-hammer", useCp: 20, gainCp: 0, cooldown: 1.2, power: 1.7 },
+      twin: { id: "twin", name: "二連撃", icon: "fa-solid fa-bolt", useCp: 16, gainCp: 0, cooldown: 1.8, power: 0.95, hits: 2 },
+      puncture: { id: "puncture", name: "貫通", icon: "fa-solid fa-crosshairs", useCp: 26, gainCp: 0, cooldown: 2.4, power: 2.0 },
+      burst: { id: "burst", name: "気合", icon: "fa-solid fa-fire", useCp: 30, gainCp: 0, cooldown: 3.0, power: 2.4 },
+      guardBreak: { id: "guardBreak", name: "崩し", icon: "fa-solid fa-shield-halved", useCp: 18, gainCp: 0, cooldown: 1.6, power: 1.4 },
+      quick: { id: "quick", name: "速打", icon: "fa-solid fa-wind", useCp: 12, gainCp: 0, cooldown: 1.0, power: 1.15 }
     };
 
     const state = {
@@ -284,7 +316,8 @@
         cooldowns: {},
         autoSlots: ["basic", "heavy"],
         manualSlots: ["twin", "puncture", "guardBreak", "quick", "burst", "basic"],
-        queuedManual: null
+        queuedManual: null,
+        targetEnemyId: "enemy-1"
       },
       enemies: Array.from({ length: 3 }, (_, i) => ({
         id: `enemy-${i + 1}`,
@@ -303,13 +336,13 @@
 
     const enemyRow = document.getElementById("enemyRow");
     const logEl = document.getElementById("log");
-    const battleStateEl = document.getElementById("battleState");
     const aliveEnemyCountEl = document.getElementById("aliveEnemyCount");
     const playerNumsEl = document.getElementById("playerNums");
     const playerHpEl = document.getElementById("playerHp");
     const playerGaugeEl = document.getElementById("playerGauge");
     const playerCpEl = document.getElementById("playerCp");
     const manualSkillsEl = document.getElementById("manualSkills");
+    const targetButtonsEl = document.getElementById("targetButtons");
     const auto1El = document.getElementById("auto1");
     const auto2El = document.getElementById("auto2");
 
@@ -339,7 +372,12 @@
       const s = SKILLS[skillId];
       const cd = actor.cooldowns[skillId] || 0;
       const cp = actor.cp ?? 0;
-      return s && cd <= 0 && cp >= s.cpCost;
+      return s && cd <= 0 && cp >= s.useCp;
+    }
+
+    function selectedEnemy() {
+      const target = state.enemies.find(e => e.id === state.player.targetEnemyId && e.alive);
+      return target || randomEnemy();
     }
 
     function applySkill(attacker, target, skillId) {
@@ -354,8 +392,8 @@
       }
 
       if (attacker.id === "player") {
-        attacker.cp = Math.max(0, attacker.cp - skill.cpCost);
-        attacker.cp = Math.min(attacker.maxCp, attacker.cp + 8);
+        attacker.cp = Math.max(0, attacker.cp - skill.useCp + skill.gainCp);
+        attacker.cp = Math.min(attacker.maxCp, attacker.cp);
       }
 
       attacker.cooldowns[skill.id] = skill.cooldown;
@@ -384,7 +422,7 @@
     }
 
     function playerAct() {
-      const target = randomEnemy();
+      const target = selectedEnemy();
       if (!target) return;
       const skillId = selectPlayerSkill();
       applySkill(state.player, target, skillId);
@@ -412,7 +450,6 @@
       const p = state.player;
       if (p.hp > 0) {
         p.gauge = Math.min(100, p.gauge + p.speed * dt);
-        p.cp = Math.min(p.maxCp, p.cp + 5.5 * dt);
       }
       updateCooldowns(p, dt);
 
@@ -436,13 +473,34 @@
 
       if (state.player.hp <= 0) {
         state.running = false;
-        battleStateEl.innerHTML = '<span class="defeat"><i class="fa-solid fa-heart-crack"></i> 敗北</span>';
         addLog("<span class='defeat'>プレイヤーは力尽きた...</span>");
       } else if (livingEnemies().length === 0) {
         state.running = false;
-        battleStateEl.innerHTML = '<span class="victory"><i class="fa-solid fa-crown"></i> 勝利</span>';
         addLog("<span class='victory'>戦闘勝利！</span>");
       }
+    }
+
+    function renderTargets() {
+      targetButtonsEl.innerHTML = state.enemies.map((e, i) => {
+        const selected = state.player.targetEnemyId === e.id;
+        return `
+          <button class="target ${selected ? "selected" : ""} ${e.alive ? "" : "disabled"}" data-id="${e.id}" type="button">
+            <i class="fa-solid fa-bullseye"></i>
+            <span>T${i + 1} ${e.alive ? "選択" : "撃破"}</span>
+          </button>
+        `;
+      }).join("");
+
+      targetButtonsEl.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const enemy = state.enemies.find(e => e.id === id);
+          if (!enemy || !enemy.alive) return;
+          state.player.targetEnemyId = id;
+          addLog(`<i class="fa-solid fa-bullseye"></i> ターゲットを${enemy.name}に変更`);
+          renderTargets();
+        });
+      });
     }
 
     function renderEnemies() {
@@ -483,7 +541,7 @@
           <button class="skill ${use ? "" : "disabled"}" data-id="${id}" type="button">
             <i class="${s.icon}"></i>
             <span>${i + 1}. ${s.name}</span>
-            <small>${queued ? "予約中" : `CP ${s.cpCost}`}</small>
+            <small>${queued ? "予約中" : `消費${s.useCp}/獲得${s.gainCp}`}</small>
           </button>
         `;
       }).join("");
@@ -506,6 +564,7 @@
     function render() {
       renderEnemies();
       renderPlayer();
+      renderTargets();
       renderManualSkills();
     }
 
