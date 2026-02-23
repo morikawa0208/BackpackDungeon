@@ -21,7 +21,6 @@
       --hp: #ff5470;
       --gauge: #57d6ff;
       --cp: #8fffa0;
-      --warn: #ffc857;
       --shadow: rgba(0, 0, 0, 0.35);
     }
 
@@ -52,6 +51,46 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       overflow: hidden;
+      position: relative;
+    }
+
+    #popupLayer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 20;
+    }
+
+    .popup {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      animation: floatUp 800ms ease-out forwards;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .popup .skill {
+      display: block;
+      font-size: 10px;
+      color: #ffe8a6;
+      margin-bottom: 1px;
+    }
+
+    .popup .value {
+      display: block;
+      font-size: 17px;
+    }
+
+    .popup.damage .value { color: #ff8398; }
+    .popup.heal .value { color: #8fffa0; }
+
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translate(-50%, -36%); }
+      15% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -165%); }
     }
 
     .top {
@@ -71,11 +110,6 @@
       border-radius: 10px;
       padding: 8px;
       transition: transform 0.12s;
-    }
-
-    .enemy-card.hit {
-      transform: translateX(2px);
-      filter: brightness(1.2);
     }
 
     .line {
@@ -101,6 +135,24 @@
       border: 1px solid #2a3158;
       overflow: hidden;
       margin-bottom: 3px;
+      position: relative;
+    }
+
+    .bar.stat {
+      height: 16px;
+    }
+
+    .bar-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #f7fbff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.72);
+      z-index: 1;
     }
 
     .fill {
@@ -115,22 +167,7 @@
 
     .middle {
       padding: 10px;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 8px;
       min-height: 0;
-    }
-
-    .state {
-      background: var(--panel);
-      border: 1px solid #2d3862;
-      border-radius: 10px;
-      padding: 8px;
-      font-size: 13px;
-      color: var(--sub);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
 
     .log {
@@ -141,7 +178,7 @@
       overflow: auto;
       font-size: 12px;
       line-height: 1.5;
-      min-height: 0;
+      min-height: 100%;
       color: #cdd9ff;
     }
 
@@ -162,13 +199,13 @@
       padding: 8px;
     }
 
-    .skills {
+    .targets {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
     }
 
-    .targets {
+    .skills {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
@@ -193,7 +230,8 @@
       box-shadow: 0 0 0 1px rgba(123, 195, 255, 0.45) inset;
     }
 
-    button.target.disabled {
+    button.target.disabled,
+    button.skill.disabled {
       opacity: 0.45;
       filter: grayscale(0.4);
       border-style: dashed;
@@ -214,14 +252,7 @@
     }
 
     button.skill i { font-size: 14px; }
-
     button.skill:active { transform: translateY(1px); }
-
-    button.skill.disabled {
-      opacity: 0.45;
-      filter: grayscale(0.4);
-      border-style: dashed;
-    }
 
     .auto {
       display: grid;
@@ -242,43 +273,34 @@
       gap: 6px;
     }
 
-    .victory {
-      color: #96ff9f;
-      font-weight: 700;
-    }
-
-    .defeat {
-      color: #ff9aa8;
-      font-weight: 700;
-    }
+    .victory { color: #96ff9f; font-weight: 700; }
+    .defeat { color: #ff9aa8; font-weight: 700; }
   </style>
 </head>
 <body>
-  <main class="app">
+  <main class="app" id="app">
+    <div id="popupLayer"></div>
+
     <section class="top">
       <div id="enemyRow" class="enemy-row"></div>
     </section>
 
     <section class="middle">
-      <div class="state">
-        <span><i class="fa-solid fa-users"></i> 敵 <span id="aliveEnemyCount">0</span>/3</span>
-      </div>
       <div id="log" class="log"></div>
     </section>
 
     <section class="bottom">
-      <div class="player-card">
+      <div class="player-card" id="playerCard">
         <div class="line">
           <span class="name"><i class="fa-solid fa-user-ninja"></i> プレイヤー</span>
-          <span id="playerNums"></span>
+          <span id="aliveEnemyInfo"><i class="fa-solid fa-users"></i> 敵 0/3</span>
         </div>
-        <div class="bar"><div id="playerHp" class="fill hp"></div></div>
+        <div class="bar stat"><div id="playerHp" class="fill hp"></div><span id="playerHpText" class="bar-text"></span></div>
         <div class="bar"><div id="playerGauge" class="fill gauge"></div></div>
-        <div class="bar"><div id="playerCp" class="fill cp"></div></div>
+        <div class="bar stat"><div id="playerCp" class="fill cp"></div><span id="playerCpText" class="bar-text"></span></div>
       </div>
 
       <div class="targets" id="targetButtons"></div>
-
       <div class="skills" id="manualSkills"></div>
 
       <div class="auto">
@@ -316,7 +338,6 @@
         cooldowns: {},
         autoSlots: ["basic", "heavy"],
         manualSlots: ["twin", "puncture", "guardBreak", "quick", "burst", "basic"],
-        queuedManual: null,
         targetEnemyId: "enemy-1"
       },
       enemies: Array.from({ length: 3 }, (_, i) => ({
@@ -324,6 +345,8 @@
         name: `敵 ${i + 1}`,
         hp: 160 + i * 30,
         maxHp: 160 + i * 30,
+        cp: 0,
+        maxCp: 100,
         atk: 24 + i * 4,
         def: 8 + i * 2,
         speed: 26 + i * 2,
@@ -334,13 +357,16 @@
       log: []
     };
 
+    const appEl = document.getElementById("app");
+    const popupLayerEl = document.getElementById("popupLayer");
     const enemyRow = document.getElementById("enemyRow");
     const logEl = document.getElementById("log");
-    const aliveEnemyCountEl = document.getElementById("aliveEnemyCount");
-    const playerNumsEl = document.getElementById("playerNums");
+    const aliveEnemyInfoEl = document.getElementById("aliveEnemyInfo");
     const playerHpEl = document.getElementById("playerHp");
     const playerGaugeEl = document.getElementById("playerGauge");
     const playerCpEl = document.getElementById("playerCp");
+    const playerHpTextEl = document.getElementById("playerHpText");
+    const playerCpTextEl = document.getElementById("playerCpText");
     const manualSkillsEl = document.getElementById("manualSkills");
     const targetButtonsEl = document.getElementById("targetButtons");
     const auto1El = document.getElementById("auto1");
@@ -362,6 +388,32 @@
       return alive[Math.floor(Math.random() * alive.length)];
     }
 
+    function selectedEnemy() {
+      const target = state.enemies.find(e => e.id === state.player.targetEnemyId && e.alive);
+      return target || randomEnemy();
+    }
+
+    function getTargetElement(targetId) {
+      if (targetId === "player") return document.getElementById("playerCard");
+      return document.getElementById(`card-${targetId}`);
+    }
+
+    function spawnPopup(targetId, value, type, skillName = "") {
+      const targetEl = getTargetElement(targetId);
+      if (!targetEl) return;
+      const appRect = appEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+      const x = targetRect.left - appRect.left + targetRect.width / 2;
+      const y = targetRect.top - appRect.top + targetRect.height / 2;
+      const popup = document.createElement("div");
+      popup.className = `popup ${type}`;
+      popup.style.left = `${x}px`;
+      popup.style.top = `${y}px`;
+      popup.innerHTML = `${skillName ? `<span class="skill">${skillName}</span>` : ""}<span class="value">${value > 0 ? `-${value}` : Math.abs(value)}</span>`;
+      popupLayerEl.appendChild(popup);
+      setTimeout(() => popup.remove(), 820);
+    }
+
     function damageCalc(attacker, target, skill) {
       const variance = 0.88 + Math.random() * 0.24;
       const raw = attacker.atk * skill.power * variance;
@@ -375,14 +427,9 @@
       return s && cd <= 0 && cp >= s.useCp;
     }
 
-    function selectedEnemy() {
-      const target = state.enemies.find(e => e.id === state.player.targetEnemyId && e.alive);
-      return target || randomEnemy();
-    }
-
     function applySkill(attacker, target, skillId) {
       const skill = SKILLS[skillId] || SKILLS.basic;
-      if (!target) return;
+      if (!target) return false;
       const hits = skill.hits || 1;
       let total = 0;
       for (let i = 0; i < hits; i += 1) {
@@ -392,29 +439,30 @@
       }
 
       if (attacker.id === "player") {
+        const cpBefore = attacker.cp;
         attacker.cp = Math.max(0, attacker.cp - skill.useCp + skill.gainCp);
         attacker.cp = Math.min(attacker.maxCp, attacker.cp);
+        const cpDiff = attacker.cp - cpBefore;
+        if (cpDiff > 0) {
+          spawnPopup("player", -cpDiff, "heal", skill.name);
+        }
       }
 
       attacker.cooldowns[skill.id] = skill.cooldown;
       target.gauge = Math.max(0, target.gauge - 18);
 
+      spawnPopup(target.id, total, "damage", skill.name);
       addLog(`<i class="${skill.icon}"></i> ${attacker.name}の${skill.name} → ${target.name}に <b>${total}</b> ダメージ`);
 
       if (target.hp <= 0) {
         target.alive = false;
         addLog(`<i class="fa-solid fa-skull"></i> ${target.name} を撃破`);
       }
+      return true;
     }
 
     function selectPlayerSkill() {
       const p = state.player;
-      if (p.queuedManual && canUseSkill(p, p.queuedManual)) {
-        const chosen = p.queuedManual;
-        p.queuedManual = null;
-        return chosen;
-      }
-
       const [slot1, slot2] = p.autoSlots;
       if (canUseSkill(p, slot2)) return slot2;
       if (canUseSkill(p, slot1)) return slot1;
@@ -435,6 +483,7 @@
       state.player.hp = Math.max(0, state.player.hp - dmg);
       enemy.cooldowns.basic = 0.5;
       state.player.gauge = Math.max(0, state.player.gauge - 10);
+      spawnPopup("player", dmg, "damage", skill.name);
       addLog(`<i class="${skill.icon}"></i> ${enemy.name}の${skill.name} → プレイヤーに <b>${dmg}</b> ダメージ`);
     }
 
@@ -506,26 +555,28 @@
     function renderEnemies() {
       enemyRow.innerHTML = state.enemies.map(e => {
         const hpRate = Math.max(0, (e.hp / e.maxHp) * 100);
+        const cpRate = Math.max(0, (e.cp / e.maxCp) * 100);
         return `
           <article class="enemy-card ${e.alive ? "" : "disabled"}" id="card-${e.id}">
             <div class="line">
               <span class="name"><i class="fa-solid fa-skull-crossbones"></i> ${e.name}</span>
-              <span>${Math.max(0, e.hp)}/${e.maxHp}</span>
             </div>
-            <div class="bar"><div class="fill hp" style="width:${hpRate}%"></div></div>
+            <div class="bar stat"><div class="fill hp" style="width:${hpRate}%"></div><span class="bar-text">HP ${Math.max(0, e.hp)}/${e.maxHp}</span></div>
             <div class="bar"><div class="fill gauge" style="width:${e.alive ? e.gauge : 0}%"></div></div>
+            <div class="bar stat"><div class="fill cp" style="width:${cpRate}%"></div><span class="bar-text">CP ${Math.floor(e.cp)}/${e.maxCp}</span></div>
           </article>
         `;
       }).join("");
-      aliveEnemyCountEl.textContent = String(livingEnemies().length);
+      aliveEnemyInfoEl.innerHTML = `<i class="fa-solid fa-users"></i> 敵 ${livingEnemies().length}/3`;
     }
 
     function renderPlayer() {
       const p = state.player;
-      playerNumsEl.textContent = `HP ${Math.max(0, Math.floor(p.hp))}/${p.maxHp} | CP ${Math.floor(p.cp)}/${p.maxCp}`;
       playerHpEl.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
       playerGaugeEl.style.width = `${p.gauge}%`;
       playerCpEl.style.width = `${(p.cp / p.maxCp) * 100}%`;
+      playerHpTextEl.textContent = `HP ${Math.max(0, Math.floor(p.hp))}/${p.maxHp}`;
+      playerCpTextEl.textContent = `CP ${Math.floor(p.cp)}/${p.maxCp}`;
 
       auto1El.textContent = SKILLS[p.autoSlots[0]].name;
       auto2El.textContent = SKILLS[p.autoSlots[1]].name;
@@ -535,27 +586,35 @@
       const p = state.player;
       manualSkillsEl.innerHTML = p.manualSlots.map((id, i) => {
         const s = SKILLS[id];
-        const use = canUseSkill(p, id);
-        const queued = p.queuedManual === id;
+        const cd = p.cooldowns[id] || 0;
+        const cpEnough = p.cp >= s.useCp;
+        const disabled = cd > 0 || !cpEnough || !state.running;
         return `
-          <button class="skill ${use ? "" : "disabled"}" data-id="${id}" type="button">
+          <button class="skill ${disabled ? "disabled" : ""}" data-id="${id}" type="button">
             <i class="${s.icon}"></i>
             <span>${i + 1}. ${s.name}</span>
-            <small>${queued ? "予約中" : `消費${s.useCp}/獲得${s.gainCp}`}</small>
+            <small>${cd > 0 ? `CT ${cd.toFixed(1)}s` : `消費${s.useCp}/獲得${s.gainCp}`}</small>
           </button>
         `;
       }).join("");
 
       manualSkillsEl.querySelectorAll("button").forEach(btn => {
         btn.addEventListener("click", () => {
-          if (!state.running) return;
+          if (!state.running || state.player.hp <= 0) return;
           const id = btn.dataset.id;
-          if (!canUseSkill(state.player, id)) {
-            addLog(`<i class="fa-solid fa-ban"></i> ${SKILLS[id].name} はCP不足 or CD中`);
+          const skill = SKILLS[id];
+          const cd = state.player.cooldowns[id] || 0;
+          if (cd > 0) {
+            addLog(`<i class="fa-solid fa-hourglass-half"></i> ${skill.name} はクールタイム中`);
             return;
           }
-          state.player.queuedManual = id;
-          addLog(`<i class="fa-solid fa-hand"></i> ${SKILLS[id].name} を予約`);
+          if (state.player.cp < skill.useCp) {
+            addLog(`<i class="fa-solid fa-ban"></i> CPが足りません`);
+            return;
+          }
+          const target = selectedEnemy();
+          if (!target) return;
+          applySkill(state.player, target, id);
           renderManualSkills();
         });
       });
@@ -575,6 +634,7 @@
       update(dt);
       renderEnemies();
       renderPlayer();
+      renderManualSkills();
       requestAnimationFrame(loop);
     }
 
