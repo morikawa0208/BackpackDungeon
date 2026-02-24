@@ -345,8 +345,6 @@
         name: `敵 ${i + 1}`,
         hp: 160 + i * 30,
         maxHp: 160 + i * 30,
-        cp: 0,
-        maxCp: 100,
         atk: 24 + i * 4,
         def: 8 + i * 2,
         speed: 26 + i * 2,
@@ -354,7 +352,8 @@
         cooldowns: {},
         alive: true
       })),
-      log: []
+      log: [],
+      rewards: { exp: 0, gold: 0, drops: [] }
     };
 
     const appEl = document.getElementById("app");
@@ -427,6 +426,27 @@
       return s && cd <= 0 && cp >= s.useCp;
     }
 
+    function rollEnemyReward(enemy) {
+      const exp = 18 + Math.floor(Math.random() * 8);
+      const gold = 12 + Math.floor(Math.random() * 10);
+      const dropPool = [
+        { name: "粗い皮", rate: 0.35 },
+        { name: "鉄の欠片", rate: 0.22 },
+        { name: "青ポーション", rate: 0.14 }
+      ];
+      const drop = dropPool.find(item => Math.random() < item.rate) || null;
+      return { enemyId: enemy.id, enemyName: enemy.name, exp, gold, drop };
+    }
+
+    function onEnemyDefeated(enemy) {
+      const reward = rollEnemyReward(enemy);
+      state.rewards.exp += reward.exp;
+      state.rewards.gold += reward.gold;
+      if (reward.drop) state.rewards.drops.push(reward.drop.name);
+      addLog(`<i class="fa-solid fa-coins"></i> ${reward.enemyName}報酬 EXP+${reward.exp} / Gold+${reward.gold}${reward.drop ? ` / ${reward.drop.name}` : ""}`);
+      return reward;
+    }
+
     function applySkill(attacker, target, skillId) {
       const skill = SKILLS[skillId] || SKILLS.basic;
       if (!target) return false;
@@ -449,7 +469,6 @@
       }
 
       attacker.cooldowns[skill.id] = skill.cooldown;
-      target.gauge = Math.max(0, target.gauge - 18);
 
       spawnPopup(target.id, total, "damage", skill.name);
       addLog(`<i class="${skill.icon}"></i> ${attacker.name}の${skill.name} → ${target.name}に <b>${total}</b> ダメージ`);
@@ -457,6 +476,7 @@
       if (target.hp <= 0) {
         target.alive = false;
         addLog(`<i class="fa-solid fa-skull"></i> ${target.name} を撃破`);
+        onEnemyDefeated(target);
       }
       return true;
     }
@@ -482,7 +502,6 @@
       const dmg = Math.max(1, Math.floor((enemy.atk * (0.85 + Math.random() * 0.25)) - state.player.def * 0.5));
       state.player.hp = Math.max(0, state.player.hp - dmg);
       enemy.cooldowns.basic = 0.5;
-      state.player.gauge = Math.max(0, state.player.gauge - 10);
       spawnPopup("player", dmg, "damage", skill.name);
       addLog(`<i class="${skill.icon}"></i> ${enemy.name}の${skill.name} → プレイヤーに <b>${dmg}</b> ダメージ`);
     }
@@ -555,7 +574,6 @@
     function renderEnemies() {
       enemyRow.innerHTML = state.enemies.map(e => {
         const hpRate = Math.max(0, (e.hp / e.maxHp) * 100);
-        const cpRate = Math.max(0, (e.cp / e.maxCp) * 100);
         return `
           <article class="enemy-card ${e.alive ? "" : "disabled"}" id="card-${e.id}">
             <div class="line">
@@ -563,7 +581,6 @@
             </div>
             <div class="bar stat"><div class="fill hp" style="width:${hpRate}%"></div><span class="bar-text">HP ${Math.max(0, e.hp)}/${e.maxHp}</span></div>
             <div class="bar"><div class="fill gauge" style="width:${e.alive ? e.gauge : 0}%"></div></div>
-            <div class="bar stat"><div class="fill cp" style="width:${cpRate}%"></div><span class="bar-text">CP ${Math.floor(e.cp)}/${e.maxCp}</span></div>
           </article>
         `;
       }).join("");
