@@ -1177,6 +1177,24 @@
                 LUK: 'LUK'
             });
 
+            const SecondaryStatKey = Object.freeze({
+                MaxHP: 'MaxHP',
+                MaxMP: 'MaxMP',
+                PhysicalAttack: 'PhysicalAttack',
+                MagicAttack: 'MagicAttack',
+                Defense: 'Defense',
+                HitRate: 'HitRate',
+                AvoidRate: 'AvoidRate',
+                CriticalChance: 'CriticalChance',
+                BonusDamagePercent: 'BonusDamagePercent',
+                BonusDefensePercent: 'BonusDefensePercent',
+                DropRateBonus: 'DropRateBonus',
+                RareDropRateBonus: 'RareDropRateBonus',
+                EnchantSuccessRateBonus: 'EnchantSuccessRateBonus',
+                GoldGainRate: 'GoldGainRate',
+                ExpGainRate: 'ExpGainRate'
+            });
+
             const HitSourceType = Object.freeze({
                 Guaranteed: 'Guaranteed',
                 Bonus: 'Bonus'
@@ -1195,6 +1213,32 @@
                 [PrimaryStatKey.DEX]: Number.isFinite(stats[PrimaryStatKey.DEX]) ? Math.max(0, Math.floor(stats[PrimaryStatKey.DEX])) : 0,
                 [PrimaryStatKey.LUK]: Number.isFinite(stats[PrimaryStatKey.LUK]) ? Math.max(0, Math.floor(stats[PrimaryStatKey.LUK])) : 0
             });
+
+            const createSecondaryStats = (stats = {}) => {
+                const pickFlat = (key) => (Number.isFinite(stats[key]) ? Math.max(0, Number(stats[key])) : 0);
+                const pickRate = (key, min = 0, max = 1) => {
+                    const value = Number.isFinite(stats[key]) ? Number(stats[key]) : 0;
+                    return Math.min(max, Math.max(min, value));
+                };
+
+                return {
+                    [SecondaryStatKey.MaxHP]: pickFlat(SecondaryStatKey.MaxHP),
+                    [SecondaryStatKey.MaxMP]: pickFlat(SecondaryStatKey.MaxMP),
+                    [SecondaryStatKey.PhysicalAttack]: pickFlat(SecondaryStatKey.PhysicalAttack),
+                    [SecondaryStatKey.MagicAttack]: pickFlat(SecondaryStatKey.MagicAttack),
+                    [SecondaryStatKey.Defense]: pickFlat(SecondaryStatKey.Defense),
+                    [SecondaryStatKey.HitRate]: pickFlat(SecondaryStatKey.HitRate),
+                    [SecondaryStatKey.AvoidRate]: pickRate(SecondaryStatKey.AvoidRate, 0, 0.95),
+                    [SecondaryStatKey.CriticalChance]: pickRate(SecondaryStatKey.CriticalChance),
+                    [SecondaryStatKey.BonusDamagePercent]: pickRate(SecondaryStatKey.BonusDamagePercent, -0.99, 10),
+                    [SecondaryStatKey.BonusDefensePercent]: pickRate(SecondaryStatKey.BonusDefensePercent, -0.99, 10),
+                    [SecondaryStatKey.DropRateBonus]: pickRate(SecondaryStatKey.DropRateBonus, -0.99, 10),
+                    [SecondaryStatKey.RareDropRateBonus]: pickRate(SecondaryStatKey.RareDropRateBonus, -0.99, 10),
+                    [SecondaryStatKey.EnchantSuccessRateBonus]: pickRate(SecondaryStatKey.EnchantSuccessRateBonus, -0.99, 10),
+                    [SecondaryStatKey.GoldGainRate]: pickRate(SecondaryStatKey.GoldGainRate, -0.99, 10),
+                    [SecondaryStatKey.ExpGainRate]: pickRate(SecondaryStatKey.ExpGainRate, -0.99, 10)
+                };
+            };
 
             class HitSequenceResolver {
                 static resolve({ attackDefinition, attackerDex, rng = Math.random }) {
@@ -1275,19 +1319,39 @@
                 attackDefinition,
                 attackerPrimaryStats,
                 defenderPrimaryStats,
-                rollCritical = () => false,
+                attackerSecondaryStats,
+                defenderSecondaryStats,
+                rollCritical,
                 rng = Math.random
             }) => {
                 const attacker = createPrimaryStats(attackerPrimaryStats);
                 const defender = createPrimaryStats(defenderPrimaryStats);
+                const attackerSecondary = createSecondaryStats(attackerSecondaryStats);
+                const defenderSecondary = createSecondaryStats(defenderSecondaryStats);
                 const hitSequence = HitSequenceResolver.resolve({
                     attackDefinition,
                     attackerDex: attacker.DEX,
                     rng
                 });
 
+                const rollCriticalBySecondary = ({ rng: random }) => {
+                    const criticalChance = attackerSecondary.CriticalChance;
+                    return random() < criticalChance;
+                };
+
+                const resolveCritical = typeof rollCritical === 'function'
+                    ? rollCritical
+                    : rollCriticalBySecondary;
+
                 return hitSequence.map((hit) => {
-                    const isCritical = !!rollCritical({ hit, attacker, defender, rng });
+                    const isCritical = !!resolveCritical({
+                        hit,
+                        attacker,
+                        defender,
+                        attackerSecondary,
+                        defenderSecondary,
+                        rng
+                    });
                     const critTier = CriticalResolver.resolveCritTier({
                         isCritical,
                         attackerLuk: attacker.LUK,
@@ -1312,9 +1376,11 @@
             window.CombatSpec = Object.freeze({
                 COMBAT_CONSTANTS,
                 PrimaryStatKey,
+                SecondaryStatKey,
                 HitSourceType,
                 CritTier,
                 createPrimaryStats,
+                createSecondaryStats,
                 HitSequenceResolver,
                 CriticalResolver,
                 resolveHitResults,
