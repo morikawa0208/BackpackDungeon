@@ -2141,14 +2141,60 @@
                 modal.classList.remove('flex');
             };
 
+            const bottomMenuPanel = document.getElementById('bottom-menu-panel');
+            const bottomMenuBackdrop = document.getElementById('bottom-menu-backdrop');
+            const navHelpButton = document.getElementById('nav-help');
+
+            const closeBottomMenu = () => {
+                if (bottomMenuPanel) {
+                    bottomMenuPanel.classList.add('hidden');
+                }
+                if (bottomMenuBackdrop) {
+                    bottomMenuBackdrop.classList.add('hidden');
+                }
+                if (navHelpButton) {
+                    navHelpButton.setAttribute('aria-expanded', 'false');
+                }
+            };
+
+            const toggleBottomMenu = () => {
+                if (!bottomMenuPanel || !bottomMenuBackdrop) {
+                    return;
+                }
+                const isClosed = bottomMenuPanel.classList.contains('hidden');
+                if (isClosed) {
+                    bottomMenuPanel.classList.remove('hidden');
+                    bottomMenuBackdrop.classList.remove('hidden');
+                    if (navHelpButton) {
+                        navHelpButton.setAttribute('aria-expanded', 'true');
+                    }
+                    return;
+                }
+                closeBottomMenu();
+            };
+
             window.switchPage = switchPage;
-            window.toggleBottomMenu = noop;
-            window.closeBottomMenu = noop;
-            window.openBottomMenuHelp = () => switchPage('help');
-            window.openBottomMenuSave = () => switchPage('save');
-            window.openBottomMenuDonate = noop;
-            window.openBottomMenuTweet = noop;
-            window.openBottomMenuFeedback = () => switchPage('feedback');
+            window.toggleBottomMenu = toggleBottomMenu;
+            window.closeBottomMenu = closeBottomMenu;
+            window.openBottomMenuHelp = () => {
+                closeBottomMenu();
+                switchPage('help');
+            };
+            window.openBottomMenuSave = () => {
+                closeBottomMenu();
+                switchPage('save');
+            };
+            window.openBottomMenuDonate = () => {
+                closeBottomMenu();
+            };
+            window.openBottomMenuTweet = (event) => {
+                noop(event);
+                closeBottomMenu();
+            };
+            window.openBottomMenuFeedback = () => {
+                closeBottomMenu();
+                switchPage('feedback');
+            };
             window.openDonateModal = noop;
             window.closeDonateModal = noop;
             window.purchaseTip = noop;
@@ -2217,6 +2263,12 @@
                         if (event.target === statusInfoModal) {
                             closeStatusInfoModal();
                         }
+                    });
+                }
+
+                if (bottomMenuBackdrop) {
+                    bottomMenuBackdrop.addEventListener('click', () => {
+                        closeBottomMenu();
                     });
                 }
 
