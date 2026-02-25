@@ -513,19 +513,19 @@
 
                 <div class="grid grid-cols-2 gap-y-6 gap-x-4">
                     <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase">STR (物理攻撃)</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">STR（筋力）</span>
                         <span class="text-2xl font-black text-slate-700" id="status-atk">10</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase">VIT (物理防御)</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">VIT（体力）</span>
                         <span class="text-2xl font-black text-slate-700" id="status-def">5</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase">INT (魔法威力)</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">INT（知力）</span>
                         <span class="text-2xl font-black text-blue-600" id="status-int">5</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase">DEX (器用さ)</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">DEX（器用）</span>
                         <span class="text-2xl font-black text-green-600" id="status-dex">5</span>
                     </div>
                 </div>
@@ -534,7 +534,7 @@
             <!-- Detailed Stats -->
             <div class="bg-slate-800 rounded-3xl p-6 text-white mb-6">
                 <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Secondary Attributes</h3>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-tighter">二次ステータス</h3>
                     <button id="secondary-info-btn" class="text-slate-400 hover:text-white transition-colors text-xs font-bold flex items-center gap-1">
                         <i class="fas fa-circle-info"></i> Info
                     </button>
@@ -542,24 +542,19 @@
                 <div class="grid grid-cols-2 gap-4 text-xs">
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>最大HP</span><span id="stat-max-hp">0</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>最大MP</span><span id="stat-max-mp">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>HP自動回復</span><span id="stat-hp-regen">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>MP自動回復</span><span id="stat-mp-regen">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>攻撃力</span><span id="stat-atk-flat">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>物理攻撃力</span><span id="stat-atk-flat">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>魔法攻撃力</span><span id="stat-magic-atk">0</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>防御力</span><span id="stat-def-flat">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>命中率</span><span id="stat-accuracy">95%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>会心率</span><span id="stat-crit">5%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>会心ダメージ</span><span id="stat-crit-dmg">200%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>与ダメ増加</span><span id="stat-dmg-boost">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>被ダメ軽減</span><span id="stat-dmg-reduction">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>回避率</span><span id="stat-eva">3%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>吸血率</span><span id="stat-leech">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>魔法貫通</span><span id="stat-m-pen">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>追加経験値</span><span id="stat-exp-boost">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>ドロップ率</span><span id="stat-luck">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>レアドロ率</span><span id="stat-rare-find">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>Affix率</span><span id="stat-affix-find">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>エリート遭遇率</span><span id="stat-elite-encounter">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>ゴールド増加率</span><span id="stat-gold-boost">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>命中</span><span id="stat-hit">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>回避</span><span id="stat-eva">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>クリティカル率</span><span id="stat-crit">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>追加ダメージ%</span><span id="stat-dmg">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>追加防御%</span><span id="stat-dr">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>ドロップ率補正</span><span id="stat-drop">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>レアドロ率補正</span><span id="stat-rare-drop">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>エンチャ成功補正</span><span id="stat-enchant-success">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>ゴールド獲得量補正</span><span id="stat-gold-gain">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>経験値獲得量補正</span><span id="stat-exp-bonus">0%</span></div>
                 </div>
             </div>
 
@@ -1240,6 +1235,16 @@
                 };
             };
 
+            const formatStatBreakdown = ({ total = 0, base = 0, bonus = 0, digits = 0, suffix = '' } = {}) => {
+                const toSafeNumber = (value) => (Number.isFinite(value) ? Number(value) : 0);
+                const normalize = (value) => {
+                    const safe = toSafeNumber(value);
+                    return digits > 0 ? safe.toFixed(digits) : String(Math.round(safe));
+                };
+
+                return `${normalize(total)}(${normalize(base)}+${normalize(bonus)})${suffix}`;
+            };
+
             class HitSequenceResolver {
                 static resolve({ attackDefinition, attackerDex, rng = Math.random }) {
                     const guaranteedHits = Math.max(0, Math.floor(attackDefinition.guaranteedHits || 0));
@@ -1381,6 +1386,7 @@
                 CritTier,
                 createPrimaryStats,
                 createSecondaryStats,
+                formatStatBreakdown,
                 HitSequenceResolver,
                 CriticalResolver,
                 resolveHitResults,
@@ -1392,10 +1398,10 @@
                 'enemy-hp-text', 'enemy-name',
                 'status-lvl', 'status-atk', 'status-def', 'status-int', 'status-dex',
                 'status-exp', 'status-next',
-                'stat-max-hp', 'stat-max-mp', 'stat-hp-regen', 'stat-mp-regen',
-                'stat-atk-flat', 'stat-def-flat', 'stat-hit', 'stat-crit', 'stat-crit-dmg',
-                'stat-dmg', 'stat-dr', 'stat-eva', 'stat-lifesteal', 'stat-magic-pen',
-                'stat-exp-bonus', 'stat-drop', 'stat-rare-drop', 'stat-affix-find'
+                'stat-max-hp', 'stat-max-mp', 'stat-atk-flat', 'stat-magic-atk',
+                'stat-def-flat', 'stat-hit', 'stat-crit', 'stat-dmg', 'stat-dr',
+                'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-rare-drop', 'stat-enchant-success',
+                'stat-gold-gain'
             ];
 
             const setDashValues = () => {
@@ -1403,6 +1409,22 @@
                     const el = document.getElementById(id);
                     if (el) {
                         el.innerText = '-';
+                    }
+                });
+
+                const breakdownStatIds = ['stat-max-hp', 'stat-max-mp', 'stat-atk-flat', 'stat-magic-atk', 'stat-def-flat', 'stat-hit'];
+                breakdownStatIds.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerText = formatStatBreakdown({ total: 0, base: 0, bonus: 0 });
+                    }
+                });
+
+                const breakdownPercentStatIds = ['stat-crit', 'stat-dmg', 'stat-dr', 'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-rare-drop', 'stat-enchant-success', 'stat-gold-gain'];
+                breakdownPercentStatIds.forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.innerText = formatStatBreakdown({ total: 0, base: 0, bonus: 0, suffix: '%' });
                     }
                 });
 
