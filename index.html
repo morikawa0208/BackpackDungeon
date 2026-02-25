@@ -1094,44 +1094,38 @@
         <div class="bg-white w-full max-w-md rounded-[2rem] overflow-x-hidden overflow-y-auto max-h-[calc(100dvh-3rem)] no-scrollbar shadow-2xl p-6 border-b-8 border-slate-200">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-black text-lg text-slate-800 flex items-center gap-2">
-                    <i class="fas fa-circle-info text-slate-500"></i> ステータスメモ
+                    <i class="fas fa-circle-info text-slate-500"></i> ステータス解説
                 </h3>
                 <button id="status-info-close" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fas fa-xmark"></i></button>
             </div>
             <div class="space-y-4 text-xs text-slate-600">
                 <div>
-                    <div class="text-[10px] font-black text-slate-400 uppercase">Primary</div>
+                    <div class="text-[10px] font-black text-slate-400 uppercase">一次ステータス</div>
                     <ul class="mt-2 space-y-1">
-                        <li><span class="font-bold text-slate-700">STR</span>：物理攻撃の基礎値。武器のATKと合算されます。</li>
-                        <li><span class="font-bold text-slate-700">VIT</span>：被ダメージ軽減の基礎値。防具DEFと合算されます。</li>
-                        <li><span class="font-bold text-slate-700">INT</span>：魔法攻撃の基礎値。回復量にも影響。</li>
-                        <li><span class="font-bold text-slate-700">DEX</span>：器用さの基礎値。命中・回避・会心率・会心ダメージに影響。</li>
+                        <li><span class="font-bold text-slate-700">STR（筋力）</span>：物理攻撃力の元になる値です。</li>
+                        <li><span class="font-bold text-slate-700">INT（知力）</span>：魔法攻撃力と最大MPの元になる値です。</li>
+                        <li><span class="font-bold text-slate-700">VIT（体力）</span>：最大HPと防御力の元になる値です。</li>
+                        <li><span class="font-bold text-slate-700">DEX（器用）</span>：命中・回避・クリティカル率に影響します。</li>
+                        <li><span class="font-bold text-slate-700">LUK（運）</span>：クリティカル補助と報酬系ボーナスに影響します。</li>
                     </ul>
                 </div>
                 <div>
-                    <div class="text-[10px] font-black text-slate-400 uppercase">Secondary</div>
+                    <div class="text-[10px] font-black text-slate-400 uppercase">二次ステータス</div>
                     <ul class="mt-2 space-y-1">
-                        <li>最大HP：HPを固定値で増加。</li>
-                        <li>最大MP：MPを固定値で増加。</li>
-                        <li>HP自動回復：ターン終了時にHPが回復。</li>
-                        <li>MP自動回復：ターン終了時にMPが回復。</li>
-                        <li>攻撃力：物理攻撃の固定増加。</li>
-                        <li>防御力：防御の固定増加。</li>
-                        <li>命中率：攻撃が命中する確率。</li>
-                        <li>会心率：クリティカルが発生する確率。</li>
-                        <li>会心ダメージ：会心時のダメージ倍率。</li>
-                        <li>与ダメ増加：通常攻撃・スキル全体の与ダメ補正。</li>
-                        <li>被ダメ軽減：敵攻撃の最終ダメージを軽減。</li>
-                        <li>回避率：敵の攻撃を回避する確率。</li>
-                        <li>吸血率：与えたダメージの一部をHP回復。</li>
-                        <li>魔法貫通：敵の防御を無視する割合（魔法系スキル向け）。</li>
-                        <li>追加経験値：獲得経験値の増加率。</li>
-                        <li>ドロップ率：戦利品が出る確率の上昇。</li>
-                        <li>レアドロ率：ドロップ品のレア度上昇確率。</li>
-                        <li>Affix率：装備にAffixが付与される確率とランク上昇率。</li>
-                        <li>エリート遭遇率：エリートモンスターの出現率が上昇。</li>
-                        <li>ゴールド増加率：獲得ゴールドの増加率。</li>
+                        <li>最大HP / 最大MP：戦闘中に使うリソース上限です。</li>
+                        <li>物理攻撃力 / 魔法攻撃力：ダメージ計算の基準値です。</li>
+                        <li>防御力：被ダメージ計算の基準値です（追加防御%適用後）。</li>
+                        <li>命中 / 回避：攻撃が当たる・避ける判定に使う値です。</li>
+                        <li>クリティカル率：物理ヒットのクリティカル発生率です。</li>
+                        <li>追加ダメージ%：与ダメージを後段で増やす補正です。</li>
+                        <li>追加防御%：防御力そのものを割合で増やす補正です。</li>
+                        <li>ドロップ率補正 / レアドロ率補正：報酬品質に関わる補正です。</li>
+                        <li>エンチャ成功補正：強化系の成功率を底上げします。</li>
+                        <li>ゴールド獲得量補正 / 経験値獲得量補正：取得報酬量を増やします。</li>
                     </ul>
+                </div>
+                <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-[10px] font-bold text-slate-500">
+                    通常表示は合計値、右上の「詳細」では合計(基礎+加算)の内訳を確認できます。
                 </div>
             </div>
             <button id="status-info-close-bottom" class="mt-5 w-full bg-slate-800 text-white font-black py-3 rounded-2xl shadow-lg">閉じる</button>
@@ -1296,11 +1290,11 @@
             });
 
             const DEFAULT_PRIMARY_STATS = Object.freeze({
-                [PrimaryStatKey.STR]: 10,
-                [PrimaryStatKey.INT]: 5,
-                [PrimaryStatKey.VIT]: 5,
-                [PrimaryStatKey.DEX]: 5,
-                [PrimaryStatKey.LUK]: 5
+                [PrimaryStatKey.STR]: 1,
+                [PrimaryStatKey.INT]: 1,
+                [PrimaryStatKey.VIT]: 1,
+                [PrimaryStatKey.DEX]: 1,
+                [PrimaryStatKey.LUK]: 1
             });
 
             class PlayerStatusCalculator {
@@ -1841,6 +1835,24 @@
                 modal.classList.remove('flex');
             };
 
+            const openStatusInfoModal = () => {
+                const modal = document.getElementById('status-info-modal');
+                if (!modal) {
+                    return;
+                }
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            };
+
+            const closeStatusInfoModal = () => {
+                const modal = document.getElementById('status-info-modal');
+                if (!modal) {
+                    return;
+                }
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            };
+
             window.switchPage = switchPage;
             window.toggleBottomMenu = noop;
             window.closeBottomMenu = noop;
@@ -1874,6 +1886,14 @@
                     });
                 }
 
+                const secondaryInfoBtn = document.getElementById('secondary-info-btn');
+                if (secondaryInfoBtn) {
+                    secondaryInfoBtn.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openStatusInfoModal();
+                    });
+                }
+
                 ['status-breakdown-close', 'status-breakdown-close-bottom'].forEach((id) => {
                     const closeButton = document.getElementById(id);
                     if (closeButton) {
@@ -1889,6 +1909,25 @@
                     statusBreakdownModal.addEventListener('click', (event) => {
                         if (event.target === statusBreakdownModal) {
                             closeStatusBreakdownModal();
+                        }
+                    });
+                }
+
+                ['status-info-close', 'status-info-close-bottom'].forEach((id) => {
+                    const closeButton = document.getElementById(id);
+                    if (closeButton) {
+                        closeButton.addEventListener('click', (event) => {
+                            event.preventDefault();
+                            closeStatusInfoModal();
+                        });
+                    }
+                });
+
+                const statusInfoModal = document.getElementById('status-info-modal');
+                if (statusInfoModal) {
+                    statusInfoModal.addEventListener('click', (event) => {
+                        if (event.target === statusInfoModal) {
+                            closeStatusInfoModal();
                         }
                     });
                 }
