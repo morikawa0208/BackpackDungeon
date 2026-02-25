@@ -1256,6 +1256,11 @@
                 DoubleCritical: 'DoubleCritical'
             });
 
+            const CombatActorSide = Object.freeze({
+                Player: 'Player',
+                Enemy: 'Enemy'
+            });
+
             const createPrimaryStats = (stats = {}) => ({
                 [PrimaryStatKey.STR]: Number.isFinite(stats[PrimaryStatKey.STR]) ? Math.max(0, Math.floor(stats[PrimaryStatKey.STR])) : 0,
                 [PrimaryStatKey.INT]: Number.isFinite(stats[PrimaryStatKey.INT]) ? Math.max(0, Math.floor(stats[PrimaryStatKey.INT])) : 0,
@@ -1562,6 +1567,7 @@
                 defenderSecondaryStats,
                 rollCritical,
                 hitChanceModifiers,
+                attackerSide = CombatActorSide.Player,
                 rng = Math.random
             }) => {
                 const attacker = createPrimaryStats(attackerPrimaryStats);
@@ -1574,9 +1580,17 @@
                     rng
                 });
 
+                const defaultHitChanceModifiers = attackerSide === CombatActorSide.Enemy
+                    ? {
+                        flatBonus: COMBAT_CONSTANTS.ENEMY_HIT_CHANCE_FLAT_BONUS,
+                        multiplier: COMBAT_CONSTANTS.ENEMY_HIT_CHANCE_MULTIPLIER
+                    }
+                    : {
+                        flatBonus: 0,
+                        multiplier: 1
+                    };
                 const resolvedHitChanceModifiers = {
-                    flatBonus: COMBAT_CONSTANTS.ENEMY_HIT_CHANCE_FLAT_BONUS,
-                    multiplier: COMBAT_CONSTANTS.ENEMY_HIT_CHANCE_MULTIPLIER,
+                    ...defaultHitChanceModifiers,
                     ...(hitChanceModifiers || {})
                 };
 
@@ -1640,6 +1654,7 @@
                 SecondaryStatKey,
                 HitSourceType,
                 CritTier,
+                CombatActorSide,
                 DEFAULT_BASE_STAT_CONFIG,
                 DEFAULT_PRIMARY_STATS,
                 createPrimaryStats,
@@ -1853,6 +1868,46 @@
                     attackerHitRate: 120,
                     defenderAvoidRate: 20
                 });
+                const playerSidePhysicalResult = resolveHitResults({
+                    attackDefinition: {
+                        guaranteedHits: 1,
+                        skillBonusHitCap: 0,
+                        bonusHitChanceTable: [],
+                        bonusHitDamageScaleTable: [],
+                        damageType: 'Physical'
+                    },
+                    attackerPrimaryStats: DEFAULT_PRIMARY_STATS,
+                    defenderPrimaryStats: DEFAULT_PRIMARY_STATS,
+                    attackerSecondaryStats: {
+                        [SecondaryStatKey.HitRate]: 120,
+                        [SecondaryStatKey.CriticalChance]: 0
+                    },
+                    defenderSecondaryStats: {
+                        [SecondaryStatKey.AvoidRate]: 20
+                    },
+                    attackerSide: CombatActorSide.Player,
+                    rng: () => 0
+                });
+                const enemySidePhysicalResult = resolveHitResults({
+                    attackDefinition: {
+                        guaranteedHits: 1,
+                        skillBonusHitCap: 0,
+                        bonusHitChanceTable: [],
+                        bonusHitDamageScaleTable: [],
+                        damageType: 'Physical'
+                    },
+                    attackerPrimaryStats: DEFAULT_PRIMARY_STATS,
+                    defenderPrimaryStats: DEFAULT_PRIMARY_STATS,
+                    attackerSecondaryStats: {
+                        [SecondaryStatKey.HitRate]: 120,
+                        [SecondaryStatKey.CriticalChance]: 0
+                    },
+                    defenderSecondaryStats: {
+                        [SecondaryStatKey.AvoidRate]: 20
+                    },
+                    attackerSide: CombatActorSide.Enemy,
+                    rng: () => 0
+                });
                 const magicalResult = resolveHitResults({
                     attackDefinition: {
                         guaranteedHits: 1,
@@ -1886,7 +1941,9 @@
                     { ok: Math.abs(hitChanceUpperClamp - COMBAT_CONSTANTS.MAX_HIT_CHANCE) < 1e-9, message: '命中率上限クランプ' },
                     { ok: Math.abs(hitChanceLowerClamp - COMBAT_CONSTANTS.MIN_HIT_CHANCE) < 1e-9, message: '命中率下限クランプ' },
                     { ok: magicalResult.length === 1 && magicalResult[0].isHit === true && magicalResult[0].hitChancePercent === 100, message: '魔法必中' },
-                    { ok: Math.abs(enemyModifierBaseline - neutralBaseline) < 1e-9, message: '敵補正初期値の中立性' }
+                    { ok: Math.abs(enemyModifierBaseline - neutralBaseline) < 1e-9, message: '敵補正初期値の中立性' },
+                    { ok: playerSidePhysicalResult.length === 1 && Math.abs(playerSidePhysicalResult[0].hitChancePercent - neutralBaseline) < 1e-9, message: 'プレイヤー側は敵補正を適用しない' },
+                    { ok: enemySidePhysicalResult.length === 1 && Math.abs(enemySidePhysicalResult[0].hitChancePercent - neutralBaseline) < 1e-9, message: '敵側初期補正は中立で同式' }
                 ];
 
                 const failed = checks.find((check) => !check.ok);
