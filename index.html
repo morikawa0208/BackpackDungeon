@@ -259,8 +259,7 @@
     <!-- TOP BAR -->
     <header class="h-12 border-b flex items-center justify-between px-4 shrink-0 bg-white z-50 shadow-sm">
         <div class="font-bold flex items-center gap-2">
-            <span class="text-slate-400 text-xs">FLOOR</span>
-            <span id="floor-display" class="text-xl font-black">1</span>
+            <span class="text-slate-700 text-sm">すきまでハクスラ</span>
         </div>
         <div class="flex items-center gap-3">
             <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">SP: <span id="header-sp">0</span></span>
@@ -287,8 +286,7 @@
                 </div>
                 <div id="enemy-container" class="text-center transition-all duration-300">
                     <div id="enemy-visual" class="text-8xl mb-4 text-slate-700"><i class="fas fa-ghost"></i></div>
-                <div id="enemy-bossrush-buffs" class="flex flex-wrap justify-center gap-1 mb-1 text-[10px]"></div>
-                <div id="enemy-name" class="font-bold text-lg mb-1">スライム</div>
+                                <div id="enemy-name" class="font-bold text-lg mb-1">スライム</div>
                 <div id="enemy-boss-badge" class="hidden justify-center mb-2">
                     <span class="boss-badge"><i class="fas fa-crown"></i> BOSS</span>
                 </div>
@@ -351,8 +349,7 @@
                     <h2 class="text-2xl font-black text-red-600 mb-2">YOU DIED</h2>
                     <p class="text-sm text-slate-500 mb-2">ペナルティが発生しました：</p>
                     <div class="text-xs text-red-600 font-bold mb-6 bg-red-50 p-3 rounded-xl">
-                        階層: -20<br>
-                        経験値ロスト: <span id="lost-exp-val">0</span>
+                        経験値ロスト: <span id="lost-exp-val">-</span>
                     </div>
                     <button onclick="revive()" class="w-full bg-red-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg active:scale-95">街に戻る</button>
                 </div>
@@ -1000,7 +997,7 @@
                     </span>
                     <span class="text-[10px] text-slate-400 font-bold">拾わない</span>
                 </label>
-                <label data-endtrial-mythic class="hidden flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                <label class="hidden flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
                     <span class="flex items-center gap-2 font-bold rarity-mythic">
                         <input type="checkbox" class="loot-filter-checkbox accent-slate-800" data-rarity="mythic">
                         ミシック
@@ -1053,7 +1050,7 @@
                         レジェンダリー
                     </span>
                 </label>
-                <label data-endtrial-mythic class="hidden flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                <label class="hidden flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
                     <span class="flex items-center gap-2 font-bold rarity-mythic">
                         <input type="checkbox" class="bulk-sell-checkbox accent-amber-500" data-rarity="mythic">
                         ミシック
@@ -1148,32 +1145,6 @@
                 </button>
                 <button id="compare-modal-close-bottom" class="w-full bg-slate-100 text-slate-500 font-black py-3 rounded-2xl shadow">閉じる</button>
             </div>
-        </div>
-    </div>
-
-    <!-- BOSS RUSH MODAL -->
-    <div id="bossrush-modal" class="fixed inset-0 bg-slate-900/80 z-[120] hidden items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl p-6 border-b-8 border-slate-200">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i class="fas fa-flag-checkered"></i> ボスラッシュ解放</h3>
-                <button id="bossrush-modal-close" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fas fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
-                <p class="font-bold text-slate-700">5000階突破おめでとうございます。ワープにボスラッシュが解放されます。5001階からはデジャヴとパラレルが交差する階層で、5000階までの構成が別の可能性として再現されます。</p>
-                <ul class="space-y-2">
-                    <li>【ボスラッシュ】</li>
-                    <li>・ワープに、ボスラッシュ入場口が解放されます</li>
-                    <li>・出現ボスはこれまでのボスからランダム抽選</li>
-                    <li>・ステータスは大幅に強化、階数を進むほど強くなります</li>
-                    <li>・ボスラッシュ中はポーション効果が半減します</li>
-                    <li>・ボスラッシュ開始後は序盤から強化バフが段階的に追加されます</li>
-                    <li>・ボスラッシュ中は経験値・ドロップなしのエンドコンテンツです</li>
-                    <li>【5001階～】</li>
-                    <li>・これまでの敵・ボスが新たなスキルを持ち再登場します</li>
-                    <li>・DXと付いた装備品がドロップするようになります</li>
-                </ul>
-            </div>
-            <button id="bossrush-modal-ok" class="mt-4 w-full bg-slate-800 text-white font-black py-3 rounded-2xl shadow-lg">了解</button>
         </div>
     </div>
 
@@ -1323,68 +1294,12 @@
 
     <!-- WARP MODAL -->
     <div id="warp-modal" class="fixed inset-0 bg-slate-900/80 z-[115] hidden items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border-b-8 border-slate-200 max-h-[80vh] overflow-y-auto">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border-b-8 border-slate-200">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-black text-lg text-slate-800 flex items-center gap-2"><i class="fas fa-location-arrow"></i> ワープ</h3>
                 <button id="warp-close" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fas fa-xmark"></i></button>
             </div>
-            <div class="text-[10px] text-slate-400 font-bold">最高到達階数: <span id="warp-max-floor">1</span>F</div>
-            <div class="mt-3 flex items-center gap-2">
-                <input id="warp-input" type="number" min="1" inputmode="numeric" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400" placeholder="階数">
-                <button id="warp-confirm" class="bg-slate-800 text-white text-xs font-black px-4 py-2 rounded-xl shadow hover:bg-slate-700 active:scale-95 transition">
-                    ワープ
-                </button>
-            </div>
-
-            <button id="warp-bossrush-enter" class="mt-3 w-full bg-rose-600 text-white text-xs font-black py-2 rounded-xl hover:bg-rose-500 transition flex items-center justify-center gap-2">
-                <i class="fas fa-flag-checkered"></i> ボスラッシュ入場
-            </button>
-            <button id="warp-bossrush-info" class="mt-3 hidden w-full bg-amber-100 text-amber-700 text-xs font-black py-2 rounded-xl hover:bg-amber-200 transition">
-                ボスラッシュ仕様を見る
-            </button>
-            <div class="mt-4">
-                <button id="warp-boss-toggle" type="button" class="w-full flex items-center justify-between text-[10px] text-slate-400 font-black mb-2">
-                    <span>討伐済みボス</span>
-                    <i id="warp-boss-toggle-icon" class="fas fa-chevron-up"></i>
-                </button>
-                <div id="warp-boss-section" class="space-y-2">
-                    <div id="warp-boss-empty" class="text-[10px] text-slate-400 hidden">討伐したボスがありません。</div>
-                    <div id="warp-boss-buttons" class="grid grid-cols-3 gap-2"></div>
-                </div>
-            </div>
-            <div class="mt-4">
-                <button id="warp-boss-post-toggle" type="button" class="w-full flex items-center justify-between text-[10px] text-slate-400 font-black mb-2">
-                    <span>討伐済みボス（5001階以降）</span>
-                    <i id="warp-boss-post-toggle-icon" class="fas fa-chevron-up"></i>
-                </button>
-                <div id="warp-boss-post-section" class="space-y-2">
-                    <div id="warp-boss-post-empty" class="text-[10px] text-slate-400 hidden">討伐したボスがありません。</div>
-                    <div id="warp-boss-post-buttons" class="grid grid-cols-3 gap-2"></div>
-                </div>
-            </div>
-            <div class="mt-4">
-                <div class="text-[10px] text-slate-400 font-black mb-2">ボスラッシュ・マイルストーン</div>
-                <div class="text-[10px] text-slate-400 font-bold mb-1">最高到達: <span id="warp-bossrush-max">0</span>F</div>
-                <div id="warp-bossrush-empty" class="text-[10px] text-slate-400 hidden">・ボスラッシュは通常階層5000F到達で解放
-<br>・終門の試練はボスラッシュ1000F到達で解放</div>
-                <div id="warp-bossrush-buttons" class="grid grid-cols-3 gap-2"></div>
-            </div>
-            <div class="mt-4">
-                <div class="text-[10px] text-slate-400 font-black mb-2">終門の試練</div>
-                <div id="warp-endtrial-locked" class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                    <div id="warp-endtrial-locked-text" class="text-[10px] text-slate-500 font-bold"></div>
-                </div>
-                <div id="warp-endtrial-unlocked" class="hidden space-y-2">
-                    <div class="text-[10px] text-slate-500 font-bold">門番討伐: <span id="warp-endtrial-progress">0 / 6</span></div>
-                    <button id="warp-endtrial-info" class="w-full bg-amber-100 text-amber-700 text-xs font-black py-2 rounded-xl hover:bg-amber-200 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-scroll"></i> 終門の試練について
-                    </button>
-                    <div id="warp-endtrial-gatekeepers" class="grid grid-cols-2 gap-2"></div>
-                    <button id="warp-endtrial-overlord" class="w-full bg-violet-700 text-white text-xs font-black py-2 rounded-xl hover:bg-violet-600 transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-                        <i class="fas fa-skull"></i> 最終ボスに挑戦
-                    </button>
-                </div>
-            </div>
+            <div class="text-xs text-slate-500 font-bold">-</div>
         </div>
     </div>
 
@@ -1468,7 +1383,7 @@
                     if (bar) bar.style.width = '0%';
                 });
 
-                ['battle-log', 'drop-log-list', 'enemy-status-effects', 'player-status-effects', 'enemy-bossrush-buffs'].forEach((id) => {
+                ['battle-log', 'drop-log-list', 'enemy-status-effects', 'player-status-effects'].forEach((id) => {
                     const el = document.getElementById(id);
                     if (el) el.innerHTML = '';
                 });
@@ -1511,6 +1426,32 @@
                 const actionBtn = document.getElementById('action-btn');
                 if (actionBtn) {
                     actionBtn.addEventListener('click', noop);
+                }
+
+                const warpModal = document.getElementById('warp-modal');
+                const warpBtn = document.getElementById('warp-btn');
+                const warpClose = document.getElementById('warp-close');
+                if (warpBtn && warpModal) {
+                    warpBtn.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        warpModal.classList.remove('hidden');
+                        warpModal.classList.add('flex');
+                    });
+                }
+                if (warpClose && warpModal) {
+                    warpClose.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        warpModal.classList.add('hidden');
+                        warpModal.classList.remove('flex');
+                    });
+                }
+                if (warpModal) {
+                    warpModal.addEventListener('click', (event) => {
+                        if (event.target === warpModal) {
+                            warpModal.classList.add('hidden');
+                            warpModal.classList.remove('flex');
+                        }
+                    });
                 }
             });
         })();
