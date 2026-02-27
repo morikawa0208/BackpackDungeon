@@ -330,7 +330,7 @@
                     </div>
                 </div>
                 <div id="next-skill-display" class="text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                    次スキル: -
+                    今回スキル: -
                 </div>
 
                 <button id="action-btn" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform text-lg flex items-center justify-center gap-2">
@@ -2464,18 +2464,28 @@
             });
 
             const renderNextSkillDisplay = () => {
-                const slotIndex = battleState.nextSkillSlotCursor % SKILL_SLOTS.length;
-                const nextSkill = SKILL_SLOTS[slotIndex];
                 const nextSkillDisplay = document.getElementById('next-skill-display');
                 if (!nextSkillDisplay) {
                     return;
                 }
-                if (!nextSkill) {
-                    nextSkillDisplay.innerText = `次スキル: Slot${slotIndex + 1} 空`; 
+
+                const slotCount = SKILL_SLOTS.length;
+                for (let step = 0; step < slotCount; step += 1) {
+                    const slotIndex = (battleState.nextSkillSlotCursor + step) % slotCount;
+                    const skill = SKILL_SLOTS[slotIndex];
+                    if (!skill) {
+                        continue;
+                    }
+                    if (battleState.playerMp < skill.mpCost) {
+                        continue;
+                    }
+
+                    const typeLabel = skill.damageType === 'Magical' ? '魔法' : '物理';
+                    nextSkillDisplay.innerText = `今回スキル: Slot${slotIndex + 1} ${skill.name} (${typeLabel} / MP${skill.mpCost})`;
                     return;
                 }
-                const typeLabel = nextSkill.damageType === 'Magical' ? '魔法' : '物理';
-                nextSkillDisplay.innerText = `次スキル: Slot${slotIndex + 1} ${nextSkill.name} (${typeLabel} / MP${nextSkill.mpCost})`;
+
+                nextSkillDisplay.innerText = `今回スキル: ${NORMAL_ATTACK_FALLBACK.name} (物理 / MP${NORMAL_ATTACK_FALLBACK.mpCost})`;
             };
 
             const resolveSkillAttackDefinition = (damageType) => ({
