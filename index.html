@@ -286,6 +286,7 @@
                 <div id="enemy-container" class="text-center transition-all duration-300">
                     <div id="enemy-visual" class="text-8xl mb-4 text-slate-700"><i class="fas fa-ghost"></i></div>
                                 <div id="enemy-name" class="font-bold text-lg mb-1">スライム</div>
+                                <div id="enemy-cycle-label" class="text-[10px] font-bold text-slate-500 mb-1">テスト敵 1 / 3</div>
                 <div id="enemy-boss-badge" class="hidden justify-center mb-2">
                     <span class="boss-badge"><i class="fas fa-crown"></i> BOSS</span>
                 </div>
@@ -327,6 +328,9 @@
                         <div id="player-exp-bar-battle" class="bar-fill exp-fill"></div>
                         <div class="bar-text">EXP: <span id="player-exp-text-battle">0/100</span></div>
                     </div>
+                </div>
+                <div id="next-skill-display" class="text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                    今回スキル: -
                 </div>
 
                 <button id="action-btn" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform text-lg flex items-center justify-center gap-2">
@@ -2212,6 +2216,381 @@
                 }
             };
 
+            const TEST_ENEMIES = Object.freeze([
+                {
+                    id: 'e_train_slime',
+                    name: 'Training Slime',
+                    iconClass: 'fa-droplet',
+                    iconColorClass: 'text-emerald-400',
+                    stats: {
+                        maxHp: 90,
+                        physicalAttack: 8,
+                        magicAttack: 0,
+                        defense: 15,
+                        hitRate: 20,
+                        avoidRate: 85,
+                        criticalChance: 0,
+                        bonusDamagePercent: 0,
+                        bonusDefensePercent: 0,
+                        luk: 0
+                    },
+                    ai: {
+                        defaultAttack: { damageKind: 'Physical', skillPower: 1.0 }
+                    }
+                },
+                {
+                    id: 'e_train_wisp',
+                    name: 'Training Wisp',
+                    iconClass: 'fa-wind',
+                    iconColorClass: 'text-cyan-400',
+                    stats: {
+                        maxHp: 75,
+                        physicalAttack: 7,
+                        magicAttack: 0,
+                        defense: 10,
+                        hitRate: 20,
+                        avoidRate: 110,
+                        criticalChance: 0,
+                        bonusDamagePercent: 0,
+                        bonusDefensePercent: 0,
+                        luk: 0
+                    },
+                    ai: {
+                        defaultAttack: { damageKind: 'Physical', skillPower: 1.0 }
+                    }
+                },
+                {
+                    id: 'e_train_golem',
+                    name: 'Training Golem',
+                    iconClass: 'fa-cubes-stacked',
+                    iconColorClass: 'text-slate-500',
+                    stats: {
+                        maxHp: 160,
+                        physicalAttack: 10,
+                        magicAttack: 0,
+                        defense: 80,
+                        hitRate: 20,
+                        avoidRate: 70,
+                        criticalChance: 0,
+                        bonusDamagePercent: 0,
+                        bonusDefensePercent: 0,
+                        luk: 0
+                    },
+                    ai: {
+                        defaultAttack: { damageKind: 'Physical', skillPower: 1.0 }
+                    }
+                }
+            ]);
+
+            const battleState = {
+                enemyIndex: 0,
+                enemyHp: 0,
+                playerHp: 0,
+                playerMp: 0,
+                nextSkillSlotCursor: 0,
+                miniLogs: []
+            };
+
+            const normalizeDamageType = (damageKind) => (damageKind === 'Magic' ? 'Magical' : 'Physical');
+
+            const toEnemyCombatant = (enemy) => ({
+                primaryStats: createPrimaryStats({ [PrimaryStatKey.LUK]: enemy.stats.luk }),
+                secondaryStats: createSecondaryStats({
+                    [SecondaryStatKey.MaxHP]: enemy.stats.maxHp,
+                    [SecondaryStatKey.PhysicalAttack]: enemy.stats.physicalAttack,
+                    [SecondaryStatKey.MagicAttack]: enemy.stats.magicAttack,
+                    [SecondaryStatKey.Defense]: enemy.stats.defense,
+                    [SecondaryStatKey.HitRate]: enemy.stats.hitRate,
+                    [SecondaryStatKey.AvoidRate]: enemy.stats.avoidRate,
+                    [SecondaryStatKey.CriticalChance]: enemy.stats.criticalChance,
+                    [SecondaryStatKey.BonusDamagePercent]: enemy.stats.bonusDamagePercent,
+                    [SecondaryStatKey.BonusDefensePercent]: enemy.stats.bonusDefensePercent
+                })
+            });
+
+            const getPlayerCombatant = () => {
+                const primaryStats = createPrimaryStats(playerProgressState.primaryStats);
+                const derived = PlayerStatusCalculator.calculateSecondaryStats({
+                    primaryStats,
+                    bonusStats: {}
+                });
+                return {
+                    primaryStats,
+                    secondaryStats: derived.secondaryStats
+                };
+            };
+
+            const pushMiniLog = (message) => {
+                battleState.miniLogs.unshift(message);
+                battleState.miniLogs = battleState.miniLogs.slice(0, 10);
+                for (let i = 0; i < 10; i += 1) {
+                    const line = document.getElementById(`mini-log-${i}`);
+                    if (line) {
+                        line.innerText = battleState.miniLogs[i] || '';
+                    }
+                }
+            };
+
+            const renderBattleBars = () => {
+                const player = getPlayerCombatant();
+                const playerMaxHp = Math.max(1, Math.floor(player.secondaryStats.MaxHP));
+                const currentEnemy = TEST_ENEMIES[battleState.enemyIndex];
+                const enemyMaxHp = Math.max(1, currentEnemy.stats.maxHp);
+
+                const playerHpText = document.getElementById('player-hp-text');
+                if (playerHpText) {
+                    playerHpText.innerText = `${battleState.playerHp}/${playerMaxHp}`;
+                }
+                const playerHpBar = document.getElementById('player-hp-bar');
+                if (playerHpBar) {
+                    playerHpBar.style.width = `${Math.max(0, Math.min(100, (battleState.playerHp / playerMaxHp) * 100))}%`;
+                }
+
+                const playerMaxMp = Math.max(0, Math.floor(player.secondaryStats.MaxMP));
+                const playerMpText = document.getElementById('player-mp-text');
+                if (playerMpText) {
+                    playerMpText.innerText = `${battleState.playerMp}/${playerMaxMp}`;
+                }
+                const playerMpBar = document.getElementById('player-mp-bar');
+                if (playerMpBar) {
+                    const ratio = playerMaxMp > 0 ? (battleState.playerMp / playerMaxMp) * 100 : 0;
+                    playerMpBar.style.width = `${Math.max(0, Math.min(100, ratio))}%`;
+                }
+
+                const enemyHpText = document.getElementById('enemy-hp-text');
+                if (enemyHpText) {
+                    enemyHpText.innerText = `${battleState.enemyHp}/${enemyMaxHp}`;
+                }
+                const enemyHpBar = document.getElementById('enemy-hp-bar');
+                if (enemyHpBar) {
+                    enemyHpBar.style.width = `${Math.max(0, Math.min(100, (battleState.enemyHp / enemyMaxHp) * 100))}%`;
+                }
+
+                const enemyName = document.getElementById('enemy-name');
+                if (enemyName) {
+                    enemyName.innerText = currentEnemy.name;
+                }
+                const enemyCycleLabel = document.getElementById('enemy-cycle-label');
+                if (enemyCycleLabel) {
+                    enemyCycleLabel.innerText = `テスト敵 ${battleState.enemyIndex + 1} / ${TEST_ENEMIES.length}`;
+                }
+
+                const enemyVisual = document.getElementById('enemy-visual');
+                if (enemyVisual) {
+                    enemyVisual.className = `text-8xl mb-4 ${currentEnemy.iconColorClass}`;
+                    enemyVisual.innerHTML = `<i class="fas ${currentEnemy.iconClass}"></i>`;
+                }
+            };
+
+            const createAttackDefinitionFromAi = (defaultAttack) => ({
+                guaranteedHits: 1,
+                skillBonusHitCap: 0,
+                bonusHitChanceTable: [],
+                bonusHitDamageScaleTable: [],
+                damageType: normalizeDamageType(defaultAttack.damageKind)
+            });
+
+            const advanceEnemy = () => {
+                battleState.enemyIndex = (battleState.enemyIndex + 1) % TEST_ENEMIES.length;
+                battleState.enemyHp = TEST_ENEMIES[battleState.enemyIndex].stats.maxHp;
+                pushMiniLog(`次の敵: ${TEST_ENEMIES[battleState.enemyIndex].name}`);
+                renderBattleBars();
+            };
+
+            const retryBattle = () => {
+                const player = getPlayerCombatant();
+                battleState.playerHp = Math.max(1, Math.floor(player.secondaryStats.MaxHP));
+                battleState.playerMp = Math.max(0, Math.floor(player.secondaryStats.MaxMP));
+                battleState.enemyHp = TEST_ENEMIES[battleState.enemyIndex].stats.maxHp;
+                pushMiniLog('プレイヤー撃破 → HP/MP全快で即リトライ');
+                renderBattleBars();
+                renderNextSkillDisplay();
+            };
+
+            const performEnemyTurn = () => {
+                const enemy = TEST_ENEMIES[battleState.enemyIndex];
+                const enemyCombatant = toEnemyCombatant(enemy);
+                const playerCombatant = getPlayerCombatant();
+                const attackDefinition = createAttackDefinitionFromAi(enemy.ai.defaultAttack);
+                const hitResults = resolveHitResults({
+                    attackDefinition,
+                    attackerPrimaryStats: enemyCombatant.primaryStats,
+                    defenderPrimaryStats: playerCombatant.primaryStats,
+                    attackerSecondaryStats: enemyCombatant.secondaryStats,
+                    defenderSecondaryStats: playerCombatant.secondaryStats,
+                    attackerSide: CombatActorSide.Enemy,
+                    rollCritical: () => false
+                });
+
+                hitResults.forEach((hit, index) => {
+                    if (!hit.isHit) {
+                        pushMiniLog(`敵攻撃${index + 1}: 物理 MISS (命中率 ${hit.hitChancePercent.toFixed(2)}%)`);
+                        return;
+                    }
+
+                    const damage = calcPhysicalDamageOnHit({
+                        attackerSecondaryStats: enemyCombatant.secondaryStats,
+                        defenderSecondaryStats: playerCombatant.secondaryStats,
+                        skillPowerMultiplier: enemy.ai.defaultAttack.skillPower,
+                        totalBonusDamagePercent: enemyCombatant.secondaryStats.BonusDamagePercent,
+                        critTier: CritTier.None
+                    });
+                    battleState.playerHp = Math.max(0, battleState.playerHp - damage.finalDamage);
+                    pushMiniLog(
+                        `敵攻撃${index + 1}: 物理 HIT ${damage.finalDamage} (命中率 ${hit.hitChancePercent.toFixed(2)}% / 軽減前 ${damage.attackPart.toFixed(2)} → 軽減後 ${damage.reducedDamage.toFixed(2)})`
+                    );
+                });
+
+                if (battleState.playerHp <= 0) {
+                    retryBattle();
+                    return;
+                }
+
+                renderBattleBars();
+            };
+
+            const SKILL_SLOTS = Object.freeze([
+                { id: 'slot-1', name: '物理通常攻撃', damageType: 'Physical', skillPower: 1.0, mpCost: 0 },
+                { id: 'slot-2', name: '魔法通常攻撃', damageType: 'Magical', skillPower: 1.0, mpCost: 10 },
+                null,
+                null
+            ]);
+
+            const NORMAL_ATTACK_FALLBACK = Object.freeze({
+                name: '通常攻撃',
+                damageType: 'Physical',
+                skillPower: 1.0,
+                mpCost: 0
+            });
+
+            const renderNextSkillDisplay = () => {
+                const nextSkillDisplay = document.getElementById('next-skill-display');
+                if (!nextSkillDisplay) {
+                    return;
+                }
+
+                const slotCount = SKILL_SLOTS.length;
+                for (let step = 0; step < slotCount; step += 1) {
+                    const slotIndex = (battleState.nextSkillSlotCursor + step) % slotCount;
+                    const skill = SKILL_SLOTS[slotIndex];
+                    if (!skill) {
+                        continue;
+                    }
+                    if (battleState.playerMp < skill.mpCost) {
+                        continue;
+                    }
+
+                    const typeLabel = skill.damageType === 'Magical' ? '魔法' : '物理';
+                    nextSkillDisplay.innerText = `今回スキル: Slot${slotIndex + 1} ${skill.name} (${typeLabel} / MP${skill.mpCost})`;
+                    return;
+                }
+
+                nextSkillDisplay.innerText = `今回スキル: ${NORMAL_ATTACK_FALLBACK.name} (物理 / MP${NORMAL_ATTACK_FALLBACK.mpCost})`;
+            };
+
+            const resolveSkillAttackDefinition = (damageType) => ({
+                guaranteedHits: 1,
+                skillBonusHitCap: 0,
+                bonusHitChanceTable: [],
+                bonusHitDamageScaleTable: [],
+                damageType
+            });
+
+            const executePlayerSkill = ({ skill, sourceLabel }) => {
+                const enemy = TEST_ENEMIES[battleState.enemyIndex];
+                const enemyCombatant = toEnemyCombatant(enemy);
+                const playerCombatant = getPlayerCombatant();
+                const attackDefinition = resolveSkillAttackDefinition(skill.damageType);
+
+                const hitResults = resolveHitResults({
+                    attackDefinition,
+                    attackerPrimaryStats: playerCombatant.primaryStats,
+                    defenderPrimaryStats: enemyCombatant.primaryStats,
+                    attackerSecondaryStats: playerCombatant.secondaryStats,
+                    defenderSecondaryStats: enemyCombatant.secondaryStats,
+                    attackerSide: CombatActorSide.Player
+                });
+
+                hitResults.forEach((hit, index) => {
+                    if (!hit.isHit) {
+                        pushMiniLog(`${sourceLabel}${index + 1}: ${skill.damageType === 'Magical' ? '魔法' : '物理'} MISS (命中率 ${hit.hitChancePercent.toFixed(2)}%)`);
+                        return;
+                    }
+
+                    const damage = skill.damageType === 'Magical'
+                        ? calcMagicDamage({
+                            attackerSecondaryStats: playerCombatant.secondaryStats,
+                            defenderSecondaryStats: enemyCombatant.secondaryStats,
+                            skillPowerMultiplier: skill.skillPower,
+                            totalBonusDamagePercent: playerCombatant.secondaryStats.BonusDamagePercent
+                        })
+                        : calcPhysicalDamageOnHit({
+                            attackerSecondaryStats: playerCombatant.secondaryStats,
+                            defenderSecondaryStats: enemyCombatant.secondaryStats,
+                            skillPowerMultiplier: skill.skillPower,
+                            totalBonusDamagePercent: playerCombatant.secondaryStats.BonusDamagePercent,
+                            critTier: hit.critTier
+                        });
+
+                    battleState.enemyHp = Math.max(0, battleState.enemyHp - damage.finalDamage);
+                    const critLabel = skill.damageType === 'Magical'
+                        ? ' / 非クリ'
+                        : (hit.critTier === CritTier.DoubleCritical
+                            ? ' / ダブルクリ'
+                            : (hit.critTier === CritTier.Critical ? ' / クリ' : ' / 非クリ'));
+                    pushMiniLog(
+                        `${sourceLabel}${index + 1}: ${skill.damageType === 'Magical' ? '魔法' : '物理'} HIT ${damage.finalDamage}${critLabel} (命中率 ${hit.hitChancePercent.toFixed(2)}% / 軽減前 ${damage.attackPart.toFixed(2)} → 軽減後 ${damage.reducedDamage.toFixed(2)} / MP消費 ${skill.mpCost})`
+                    );
+                });
+
+                if (battleState.enemyHp <= 0) {
+                    pushMiniLog(`${enemy.name} を撃破`);
+                    advanceEnemy();
+                    return;
+                }
+
+                renderBattleBars();
+                performEnemyTurn();
+            };
+
+            const performPlayerActionBySkillSlots = () => {
+                const slotCount = SKILL_SLOTS.length;
+                for (let step = 0; step < slotCount; step += 1) {
+                    const slotIndex = (battleState.nextSkillSlotCursor + step) % slotCount;
+                    const skill = SKILL_SLOTS[slotIndex];
+                    if (!skill) {
+                        pushMiniLog(`Slot${slotIndex + 1}: 空スロット`);
+                        continue;
+                    }
+                    if (battleState.playerMp < skill.mpCost) {
+                        pushMiniLog(`Slot${slotIndex + 1}: ${skill.name} MP不足 (${battleState.playerMp}/${skill.mpCost})`);
+                        continue;
+                    }
+
+                    battleState.playerMp = Math.max(0, battleState.playerMp - skill.mpCost);
+                    battleState.nextSkillSlotCursor = (slotIndex + 1) % slotCount;
+                    executePlayerSkill({ skill, sourceLabel: `Slot${slotIndex + 1} ${skill.name} ` });
+                    renderNextSkillDisplay();
+                    return;
+                }
+
+                pushMiniLog('有効なスキルなし → 通常攻撃へフォールバック');
+                executePlayerSkill({ skill: NORMAL_ATTACK_FALLBACK, sourceLabel: '通常攻撃 ' });
+                renderNextSkillDisplay();
+            };
+
+            const initializeBattleSimulation = () => {
+                battleState.enemyIndex = 0;
+                battleState.enemyHp = TEST_ENEMIES[0].stats.maxHp;
+                battleState.playerHp = Math.max(1, Math.floor(getPlayerCombatant().secondaryStats.MaxHP));
+                battleState.playerMp = Math.max(0, Math.floor(getPlayerCombatant().secondaryStats.MaxMP));
+                battleState.nextSkillSlotCursor = 0;
+                battleState.miniLogs = [];
+                pushMiniLog('テスト戦闘開始: Training Slime');
+                renderBattleBars();
+                renderNextSkillDisplay();
+            };
+
             const noop = (event) => {
                 if (event) {
                     event.preventDefault();
@@ -2341,6 +2720,7 @@
                 runSecondaryStatSelfTests();
                 renderDerivedSecondaryStats({ primaryStats: playerProgressState.primaryStats });
                 renderStatusSummary();
+                initializeBattleSimulation();
                 switchPage('status');
 
                 const secondaryBreakdownBtn = document.getElementById('secondary-breakdown-btn');
@@ -2418,7 +2798,10 @@
 
                 const actionBtn = document.getElementById('action-btn');
                 if (actionBtn) {
-                    actionBtn.addEventListener('click', noop);
+                    actionBtn.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        performPlayerActionBySkillSlots();
+                    });
                 }
 
                 const warpModal = document.getElementById('warp-modal');
