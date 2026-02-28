@@ -1065,8 +1065,7 @@
                 </div>
                 <div id="enhance-modal-warning" class="text-[10px] text-rose-500 font-bold"></div>
             </div>
-            <button id="enhance-modal-start" class="mt-4 w-full bg-slate-800 text-white font-black py-3 rounded-2xl shadow-lg">強化</button>
-            <div id="enhance-modal-progress" class="hidden mt-6 text-center space-y-3">
+                        <div id="enhance-modal-progress" class="hidden mt-6 text-center space-y-3">
                 <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 enhance-rattle">
                     <i class="fas fa-hammer text-2xl"></i>
                 </div>
@@ -1078,12 +1077,12 @@
                 <div id="enhance-modal-result-title" class="font-black text-lg"></div>
                 <div id="enhance-modal-result-detail" class="text-xs font-bold text-slate-600"></div>
                 <div id="enhance-modal-result-extra" class="text-[10px] text-slate-400"></div>
-                <button id="enhance-modal-repeat" class="w-full bg-slate-800 text-white font-black py-2.5 rounded-xl shadow flex items-center justify-center gap-2">
-                    <i class="fas fa-hammer"></i>
-                    <span>強化する</span>
-                </button>
                 <div class="text-[10px] text-slate-400">タップで閉じる</div>
             </div>
+            <button id="enhance-modal-repeat" class="mt-4 w-full bg-slate-800 text-white font-black py-2.5 rounded-xl shadow flex items-center justify-center gap-2">
+                <i class="fas fa-hammer"></i>
+                <span id="enhance-modal-repeat-label">強化する</span>
+            </button>
         </div>
     </div>
 
@@ -2471,6 +2470,28 @@
                 sortOrder: 'newest'
             };
 
+            const SELL_PRICE_BY_RARITY = Object.freeze({
+                [ITEM_RARITY.normal]: 25,
+                [ITEM_RARITY.magic]: 90,
+                [ITEM_RARITY.rare]: 260,
+                [ITEM_RARITY.legendary]: 1000
+            });
+
+            const equipmentState = {
+                inventoryItems: [],
+                equipped: {
+                    weapon: null,
+                    armor: null,
+                    head: null,
+                    hands: null,
+                    feet: null,
+                    accessory1: null,
+                    accessory2: null
+                },
+                filter: 'all',
+                sortOrder: 'newest'
+            };
+
             const battleState = {
                 currentFloor: 1,
                 currentEnemy: null,
@@ -2645,6 +2666,17 @@
                 return Math.max(5, Math.min(100, baseRate + Math.max(0, enchantBonusRate)));
             };
 
+            const getEnhanceLevelClass = (level, isBroken) => {
+                if (isBroken) return 'enhance-broken';
+                if (level >= 15) return 'enhance-white';
+                if (level >= 12) return 'enhance-gold';
+                if (level >= 10) return 'enhance-orange';
+                if (level >= 8) return 'enhance-pink';
+                if (level >= 6) return 'enhance-blue';
+                if (level >= 4) return 'enhance-yellow';
+                return 'enhance-green';
+            };
+
             const getEnhanceCost = (item) => {
                 const level = Math.max(0, Math.floor(Number(item?.enhanceLevel) || 0));
                 return Math.max(10, Math.floor(getSellPrice(item) * (0.6 + (level * 0.35))));
@@ -2780,6 +2812,18 @@
                 pendingEquipSlotKey: null
             };
 
+            const enhanceUiState = {
+                resolveTimerId: null,
+                pendingResult: null
+            };
+
+            const clearEnhanceResolveTimer = () => {
+                if (enhanceUiState.resolveTimerId) {
+                    clearTimeout(enhanceUiState.resolveTimerId);
+                    enhanceUiState.resolveTimerId = null;
+                }
+            };
+
             const getEquippedSlotKeyByItemId = (instanceId) => {
                 if (!instanceId) {
                     return null;
@@ -2872,8 +2916,10 @@
                 const infoEl = document.getElementById('enhance-modal-info');
                 const progressEl = document.getElementById('enhance-modal-progress');
                 const resultEl = document.getElementById('enhance-modal-result');
-                if (titleEl) titleEl.innerHTML = `<i class="fas fa-hammer text-slate-500"></i> ${item.name}`;
-                if (levelEl) levelEl.innerText = `+${level}${item.isBroken ? ' (破損)' : ''}`;
+                const actionBtn = document.getElementById('enhance-modal-repeat');
+                const actionLabel = document.getElementById('enhance-modal-repeat-label');
+                if (titleEl) titleEl.innerHTML = `<i class="fas fa-hammer text-slate-500"></i> ${formatItemDisplayName(item)}`;
+                if (levelEl) levelEl.innerHTML = `<span class="enhance-label ${getEnhanceLevelClass(level, item.isBroken)}">+${level}</span>${item.isBroken ? ' <span class="enhance-broken">破損</span>' : ''}`;
                 if (costEl) costEl.innerText = `${cost}G`;
                 if (previewEl) previewEl.innerText = item.isBroken
                     ? `修理後に強化再開できます（成功率 ${successRate.toFixed(1)}%）`
@@ -2881,6 +2927,17 @@
                 if (warningEl) warningEl.innerText = level >= 10
                     ? '失敗時は破損（修理が必要）'
                     : (level >= 6 ? '失敗時は強化値-1' : '失敗時の強化値低下なし');
+                const canAfford = playerProgressState.gold >= cost;
+                const actionText = item.isBroken ? '修理する' : '強化する';
+                if (actionLabel) actionLabel.innerText = actionText;
+                if (actionBtn) {
+                    actionBtn.disabled = !canAfford;
+                    actionBtn.className = `mt-4 w-full font-black py-2.5 rounded-xl shadow flex items-center justify-center gap-2 ${!canAfford
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : (item.isBroken ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white')}`;
+                    const actionIcon = item.isBroken ? 'fa-screwdriver-wrench' : 'fa-hammer';
+                    actionBtn.innerHTML = `<i class="fas ${actionIcon}"></i><span id="enhance-modal-repeat-label">${actionText}</span>`;
+                }
                 if (infoEl) infoEl.classList.remove('hidden');
                 if (progressEl) progressEl.classList.add('hidden');
                 if (resultEl) resultEl.classList.add('hidden');
@@ -2898,7 +2955,7 @@
                 syncEnhanceModal(item);
             };
 
-            const runEnhancement = () => {
+            const runEnhancement = ({ skipAnimation = false } = {}) => {
                 const modal = document.getElementById('enhance-modal');
                 const instanceId = modal ? modal.dataset.itemId : '';
                 const item = equipmentState.inventoryItems.find((entry) => entry.instanceId === instanceId);
@@ -2945,6 +3002,13 @@
                 }
 
                 normalizeInventoryItem(item);
+                renderDerivedSecondaryStats({ primaryStats: playerProgressState.primaryStats, bonusStats: getEquippedBonusStats() });
+                renderStatusSummary();
+                renderBattleBars();
+                renderEquipmentSummary();
+                renderInventory();
+                persistBattleState();
+
                 const infoEl = document.getElementById('enhance-modal-info');
                 const progressEl = document.getElementById('enhance-modal-progress');
                 const resultEl = document.getElementById('enhance-modal-result');
@@ -2952,20 +3016,37 @@
                 const titleEl = document.getElementById('enhance-modal-result-title');
                 const detailEl = document.getElementById('enhance-modal-result-detail');
                 const extraEl = document.getElementById('enhance-modal-result-extra');
-                if (infoEl) infoEl.classList.add('hidden');
-                if (progressEl) progressEl.classList.add('hidden');
-                if (resultEl) resultEl.classList.remove('hidden');
-                if (iconEl) iconEl.innerHTML = success ? '<i class="fas fa-burst text-emerald-500 enhance-glow-success"></i>' : '<i class="fas fa-triangle-exclamation text-rose-500 enhance-glow-fail"></i>';
-                if (titleEl) titleEl.innerText = success ? '強化成功' : (item.isBroken ? '装備破損' : '強化失敗');
-                if (detailEl) detailEl.innerText = detailText;
-                if (extraEl) extraEl.innerText = extraText;
 
-                renderDerivedSecondaryStats({ primaryStats: playerProgressState.primaryStats, bonusStats: getEquippedBonusStats() });
-                renderStatusSummary();
-                renderBattleBars();
-                renderEquipmentSummary();
-                renderInventory();
-                persistBattleState();
+                const showResult = () => {
+                    clearEnhanceResolveTimer();
+                    enhanceUiState.pendingResult = null;
+                    if (infoEl) infoEl.classList.add('hidden');
+                    if (progressEl) progressEl.classList.add('hidden');
+                    if (resultEl) resultEl.classList.remove('hidden');
+                    if (iconEl) iconEl.innerHTML = success
+                        ? '<i class="fas fa-burst text-emerald-500 enhance-glow-success"></i>'
+                        : (item.isBroken
+                            ? '<i class="fas fa-skull-crossbones text-rose-600 enhance-glow-fail"></i>'
+                            : '<i class="fas fa-triangle-exclamation text-rose-500 enhance-glow-fail"></i>');
+                    if (titleEl) titleEl.innerText = success ? '強化成功' : (item.isBroken ? '装備破損' : '強化失敗');
+                    if (detailEl) detailEl.innerText = detailText;
+                    if (extraEl) extraEl.innerText = extraText;
+                };
+
+                if (skipAnimation) {
+                    showResult();
+                    return;
+                }
+
+                if (infoEl) infoEl.classList.add('hidden');
+                if (resultEl) resultEl.classList.add('hidden');
+                if (progressEl) progressEl.classList.remove('hidden');
+                enhanceUiState.pendingResult = showResult;
+                clearEnhanceResolveTimer();
+                enhanceUiState.resolveTimerId = setTimeout(() => {
+                    showResult();
+                    syncEnhanceModal(item);
+                }, 950);
             };
 
             const closeEnhanceModal = () => {
@@ -2973,9 +3054,30 @@
                 if (!modal) {
                     return;
                 }
+                clearEnhanceResolveTimer();
+                enhanceUiState.pendingResult = null;
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
                 modal.dataset.itemId = '';
+                const infoEl = document.getElementById('enhance-modal-info');
+                const progressEl = document.getElementById('enhance-modal-progress');
+                const resultEl = document.getElementById('enhance-modal-result');
+                if (infoEl) infoEl.classList.remove('hidden');
+                if (progressEl) progressEl.classList.add('hidden');
+                if (resultEl) resultEl.classList.add('hidden');
+            };
+
+            const formatItemDisplayName = (item) => {
+                if (!item) {
+                    return 'なし';
+                }
+                normalizeInventoryItem(item);
+                const level = Math.max(0, Math.floor(Number(item.enhanceLevel) || 0));
+                const suffix = level > 0
+                    ? ` <span class="enhance-label ${getEnhanceLevelClass(level, false)}">+${level}</span>`
+                    : '';
+                const brokenText = item.isBroken ? ' <span class="text-rose-600 font-black">(破損)</span>' : '';
+                return `${item.name}${suffix}${brokenText}`;
             };
 
             const summarizeItemStats = (item) => {
@@ -3016,8 +3118,8 @@
                 const equippedItem = equipmentState.equipped[resolvedSlotKey] || null;
                 const equippedName = document.getElementById('compare-modal-equipped');
                 const candidateName = document.getElementById('compare-modal-candidate');
-                if (equippedName) equippedName.innerText = equippedItem ? equippedItem.name : 'なし';
-                if (candidateName) candidateName.innerText = candidateItem.name;
+                if (equippedName) equippedName.innerHTML = equippedItem ? formatItemDisplayName(equippedItem) : 'なし';
+                if (candidateName) candidateName.innerHTML = formatItemDisplayName(candidateItem);
 
                 const equippedMap = {};
                 (equippedItem?.finalStats || []).forEach((stat) => {
@@ -3067,14 +3169,14 @@
 
                 if (item.slot === EQUIP_SLOT.accessory) {
                     if (slot2Card) slot2Card.classList.remove('hidden');
-                    if (slot1Label) slot1Label.innerText = `装飾品1: ${equipmentState.equipped.accessory1 ? equipmentState.equipped.accessory1.name : 'なし'}`;
-                    if (slot2Label) slot2Label.innerText = `装飾品2: ${equipmentState.equipped.accessory2 ? equipmentState.equipped.accessory2.name : 'なし'}`;
+                    if (slot1Label) slot1Label.innerHTML = `装飾品1: ${equipmentState.equipped.accessory1 ? formatItemDisplayName(equipmentState.equipped.accessory1) : 'なし'}`;
+                    if (slot2Label) slot2Label.innerHTML = `装飾品2: ${equipmentState.equipped.accessory2 ? formatItemDisplayName(equipmentState.equipped.accessory2) : 'なし'}`;
                     if (slot1Button) slot1Button.dataset.slotKey = 'accessory1';
                     if (slot2Button) slot2Button.dataset.slotKey = 'accessory2';
                 } else {
                     if (slot2Card) slot2Card.classList.add('hidden');
                     const equipped = equipmentState.equipped[item.slot];
-                    if (slot1Label) slot1Label.innerText = `${getSlotLabel(item.slot)}: ${equipped ? equipped.name : 'なし'}`;
+                    if (slot1Label) slot1Label.innerHTML = `${getSlotLabel(item.slot)}: ${equipped ? formatItemDisplayName(equipped) : 'なし'}`;
                     if (slot1Button) slot1Button.dataset.slotKey = item.slot;
                     if (slot2Button) slot2Button.dataset.slotKey = '';
                 }
@@ -3123,7 +3225,7 @@
                     const nameEl = document.getElementById(nameId);
                     const valueEl = document.getElementById(valueId);
                     if (nameEl) {
-                        nameEl.textContent = item ? item.name : 'なし';
+                        nameEl.innerHTML = item ? formatItemDisplayName(item) : 'なし';
                     }
                     if (valueEl) {
                         valueEl.innerText = item ? summarizeItemStats(item) : '';
@@ -3165,10 +3267,13 @@
                         : 'equip-btn px-2 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black flex items-center justify-center gap-1';
                     const sellDisabled = isEquipped || isFavorite;
                     const sellText = isEquipped ? '装備中' : (isFavorite ? '保護中' : `売却 ${getSellPrice(item)}G`);
+                    const enhanceCost = getEnhanceCost(item);
+                    const canEnhance = playerProgressState.gold >= enhanceCost;
+                    const enhanceText = item.isBroken ? '修理' : '強化';
                     row.innerHTML = `
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0 flex-1">
-                                <div class="text-[11px] font-black rarity-${item.rarity}"><i class="fas ${item.iconClass}"></i> ${namePrefix}${item.name}</div>
+                                <div class="text-[11px] font-black rarity-${item.rarity}"><i class="fas ${item.iconClass}"></i> ${namePrefix}${formatItemDisplayName(item)}</div>
                                 <div class="text-[10px] text-slate-500 font-bold mt-1">${getSlotLabel(item.slot)} / ${item.mainSummary}</div>
                                 <div class="text-[9px] text-slate-400 mt-1">固有: ${uniqueStat}</div>
                                 <div class="text-[9px] text-slate-400 mt-1">${affixText}</div>
@@ -3177,7 +3282,7 @@
                                 <button class="${equipButtonClass}" data-item-id="${item.instanceId}"><i class="fas ${isEquipped ? 'fa-link-slash' : 'fa-shield'}"></i>${isEquipped ? 'はずす' : '装備'}</button>
                                 <button class="sell-btn px-2 py-1 rounded-lg border text-[10px] font-black flex items-center justify-center gap-1 ${sellDisabled ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-amber-50 text-amber-700 border-amber-300'}" data-item-id="${item.instanceId}" ${sellDisabled ? 'disabled' : ''}><i class="fas fa-coins"></i>${sellText}</button>
                                 <button class="favorite-btn px-2 py-1 rounded-lg border text-[10px] font-black flex items-center justify-center gap-1 ${isFavorite ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-600 border-slate-200'}" data-item-id="${item.instanceId}"><i class="fas ${isFavorite ? 'fa-star' : 'fa-star-half-stroke'}"></i>${isFavorite ? 'お気解除' : 'お気入り'}</button>
-                                <button class="enhance-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-indigo-50 text-indigo-700 border-indigo-300 flex items-center justify-center gap-1" data-item-id="${item.instanceId}"><i class="fas fa-hammer"></i>強化</button>
+                                <button class="enhance-btn px-2 py-1 rounded-lg border text-[10px] font-black flex items-center justify-center gap-1 ${canEnhance ? (item.isBroken ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-indigo-50 text-indigo-700 border-indigo-300') : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'}" data-item-id="${item.instanceId}" ${canEnhance ? '' : 'disabled'}><i class="fas ${item.isBroken ? 'fa-screwdriver-wrench' : 'fa-hammer'}"></i>${enhanceText}</button>
                                 <button class="compare-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-white text-slate-600 border-slate-200 flex items-center justify-center gap-1" data-item-id="${item.instanceId}"><i class="fas fa-scale-balanced"></i>比較</button>
                             </div>
                         </div>`;
@@ -4029,18 +4134,25 @@
                         }
                     });
                 }
-                const enhanceStartBtn = document.getElementById('enhance-modal-start');
-                if (enhanceStartBtn) {
-                    enhanceStartBtn.addEventListener('click', (event) => {
-                        event.preventDefault();
-                        runEnhancement();
-                    });
-                }
                 const enhanceRepeatBtn = document.getElementById('enhance-modal-repeat');
                 if (enhanceRepeatBtn) {
                     enhanceRepeatBtn.addEventListener('click', (event) => {
                         event.preventDefault();
                         runEnhancement();
+                    });
+                }
+                const enhanceProgress = document.getElementById('enhance-modal-progress');
+                if (enhanceProgress) {
+                    enhanceProgress.addEventListener('click', () => {
+                        if (enhanceUiState.pendingResult) {
+                            enhanceUiState.pendingResult();
+                        }
+                    });
+                }
+                const enhanceResult = document.getElementById('enhance-modal-result');
+                if (enhanceResult) {
+                    enhanceResult.addEventListener('click', (event) => {
+                        closeEnhanceModal();
                     });
                 }
 
