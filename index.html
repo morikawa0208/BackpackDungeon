@@ -2455,34 +2455,6 @@
                 }
              ]);
 
-            const FLOOR_ENEMY_POOLS = Object.freeze([
-                Object.freeze([
-                    { id: 'f001_slime', name: '緑スライム', iconClass: 'fa-droplet', iconColorClass: 'text-emerald-400', statMultipliers: { maxHp: 0.9, defense: 0.9, physicalAttack: 0.95 } },
-                    { id: 'f001_goblin', name: 'ゴブリン斥候', iconClass: 'fa-dagger', iconColorClass: 'text-lime-500', statMultipliers: { maxHp: 1.0, defense: 1.0, physicalAttack: 1.0 } },
-                    { id: 'f001_wolf', name: '灰毛ウルフ', iconClass: 'fa-dog', iconColorClass: 'text-slate-500', statMultipliers: { maxHp: 0.95, defense: 0.9, physicalAttack: 1.1 } }
-                ]),
-                Object.freeze([
-                    { id: 'f101_skeleton', name: '骸骨兵', iconClass: 'fa-skull', iconColorClass: 'text-slate-400', statMultipliers: { maxHp: 1.05, defense: 1.05, physicalAttack: 1.05 } },
-                    { id: 'f101_bat', name: 'ブラッドバット', iconClass: 'fa-bat', iconColorClass: 'text-purple-500', statMultipliers: { maxHp: 0.9, defense: 0.9, physicalAttack: 1.15 } },
-                    { id: 'f101_orc', name: 'オーク戦士', iconClass: 'fa-hammer', iconColorClass: 'text-amber-700', statMultipliers: { maxHp: 1.15, defense: 1.1, physicalAttack: 1.0 } }
-                ]),
-                Object.freeze([
-                    { id: 'f201_gargoyle', name: 'ガーゴイル', iconClass: 'fa-chess-rook', iconColorClass: 'text-stone-500', statMultipliers: { maxHp: 1.1, defense: 1.2, physicalAttack: 0.95 } },
-                    { id: 'f201_lizard', name: 'リザードマン', iconClass: 'fa-dragon', iconColorClass: 'text-teal-500', statMultipliers: { maxHp: 1.0, defense: 1.0, physicalAttack: 1.1 } },
-                    { id: 'f201_bandit', name: '山賊剣士', iconClass: 'fa-user-ninja', iconColorClass: 'text-rose-500', statMultipliers: { maxHp: 0.95, defense: 0.95, physicalAttack: 1.2 } }
-                ]),
-                Object.freeze([
-                    { id: 'f301_dullahan', name: 'デュラハン', iconClass: 'fa-shield', iconColorClass: 'text-indigo-500', statMultipliers: { maxHp: 1.15, defense: 1.1, physicalAttack: 1.1 } },
-                    { id: 'f301_ogre', name: 'オーガ', iconClass: 'fa-dumbbell', iconColorClass: 'text-orange-600', statMultipliers: { maxHp: 1.2, defense: 1.0, physicalAttack: 1.15 } },
-                    { id: 'f301_wraith', name: 'レイス', iconClass: 'fa-ghost', iconColorClass: 'text-cyan-400', statMultipliers: { maxHp: 1.0, defense: 0.95, physicalAttack: 1.2 } }
-                ]),
-                Object.freeze([
-                    { id: 'f401_revenant', name: 'レヴナント', iconClass: 'fa-skull-crossbones', iconColorClass: 'text-red-500', statMultipliers: { maxHp: 1.15, defense: 1.15, physicalAttack: 1.1 } },
-                    { id: 'f401_manticore', name: 'マンティコア幼体', iconClass: 'fa-cat', iconColorClass: 'text-yellow-600', statMultipliers: { maxHp: 1.05, defense: 0.95, physicalAttack: 1.25 } },
-                    { id: 'f401_knight', name: '呪鋼騎士', iconClass: 'fa-shield-halved', iconColorClass: 'text-slate-600', statMultipliers: { maxHp: 1.2, defense: 1.25, physicalAttack: 1.0 } }
-                ])
-            ]);
-
             const SELL_PRICE_BY_RARITY = Object.freeze({
                 [ITEM_RARITY.normal]: 25,
                 [ITEM_RARITY.magic]: 90,
