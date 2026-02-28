@@ -2477,6 +2477,28 @@
                 sortOrder: 'newest'
             };
 
+            const SELL_PRICE_BY_RARITY = Object.freeze({
+                [ITEM_RARITY.normal]: 25,
+                [ITEM_RARITY.magic]: 90,
+                [ITEM_RARITY.rare]: 260,
+                [ITEM_RARITY.legendary]: 1000
+            });
+
+            const equipmentState = {
+                inventoryItems: [],
+                equipped: {
+                    weapon: null,
+                    armor: null,
+                    head: null,
+                    hands: null,
+                    feet: null,
+                    accessory1: null,
+                    accessory2: null
+                },
+                filter: 'all',
+                sortOrder: 'newest'
+            };
+
             const battleState = {
                 currentFloor: 1,
                 currentEnemy: null,
@@ -2754,7 +2776,8 @@
                 if (!modal || !candidateItem) {
                     return;
                 }
-                const equippedItem = equipmentState.equipped[slotKey] || null;
+                const resolvedSlotKey = slotKey || candidateItem.slot;
+                const equippedItem = equipmentState.equipped[resolvedSlotKey] || null;
                 const equippedName = document.getElementById('compare-modal-equipped');
                 const candidateName = document.getElementById('compare-modal-candidate');
                 if (equippedName) equippedName.innerText = equippedItem ? equippedItem.name : 'なし';
@@ -2784,7 +2807,7 @@
                 if (decEl) decEl.innerHTML = decrease.length ? decrease.map((line) => `<div class="text-[10px] text-rose-600 font-bold">${line}</div>`).join('') : '<div class="text-[10px] text-slate-400">なし</div>';
 
                 equipmentUiState.pendingEquipItemId = candidateItem.instanceId;
-                equipmentUiState.pendingEquipSlotKey = slotKey;
+                equipmentUiState.pendingEquipSlotKey = resolvedSlotKey;
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             };
@@ -2796,6 +2819,7 @@
                     return;
                 }
                 equipmentUiState.pendingEquipItemId = instanceId;
+                equipmentUiState.pendingEquipSlotKey = null;
                 const title = document.getElementById('equip-slot-title');
                 if (title) title.innerText = `${item.name} を装備`;
 
@@ -2821,6 +2845,8 @@
                     if (slot1Label) slot1Label.innerText = `${getSlotLabel(item.slot)}: ${equipped ? equipped.name : 'なし'}`;
                     if (slot1Button) slot1Button.dataset.slotKey = item.slot;
                     if (slot1Compare) slot1Compare.dataset.slotKey = item.slot;
+                    if (slot2Button) slot2Button.dataset.slotKey = '';
+                    if (slot2Compare) slot2Compare.dataset.slotKey = '';
                 }
 
                 modal.classList.remove('hidden');
@@ -2899,12 +2925,13 @@
                     const row = document.createElement('div');
                     row.className = 'bg-white rounded-xl border p-3 shadow-sm';
                     const affixText = item.affixes.length ? item.affixes.map((affix) => `${affix.label}+${affix.value}`).join(' / ') : 'Affixなし';
+                    const uniqueStat = item.finalStats[1] ? `${item.finalStats[1].key}+${item.finalStats[1].value}` : 'なし';
                     row.innerHTML = `
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <div class="text-[11px] font-black rarity-${item.rarity}"><i class="fas ${item.iconClass}"></i> ${item.name}</div>
                                 <div class="text-[10px] text-slate-500 font-bold mt-1">${getSlotLabel(item.slot)} / ${item.mainSummary}</div>
-                                <div class="text-[9px] text-slate-400 mt-1">固有: ${item.finalStats[1].key}+${item.finalStats[1].value}</div>
+                                <div class="text-[9px] text-slate-400 mt-1">固有: ${uniqueStat}</div>
                                 <div class="text-[9px] text-slate-400 mt-1">${affixText}</div>
                             </div>
                             <button class="equip-btn px-2 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black" data-item-id="${item.instanceId}">装備</button>
