@@ -67,9 +67,6 @@
             animation: floatUp 0.8s forwards;
             pointer-events: none;
             z-index: 100;
-            text-shadow: 0 0 2px rgba(15, 23, 42, 0.95), 0 0 6px rgba(15, 23, 42, 0.65);
-            -webkit-text-stroke: 1.2px rgba(15, 23, 42, 0.9);
-            paint-order: stroke fill;
             --offset-x: 0px;
             --offset-y: 0px;
             transform: translate(-50%, -50%) translate(var(--offset-x), var(--offset-y));
@@ -3383,33 +3380,11 @@
                 }
             };
 
-            const getPopupAnchor = ({ target = 'enemy', layer }) => {
-                if (target !== 'playerHpBar') {
-                    return { leftPercent: 50, topPercent: 34 };
-                }
-                const anchor = document.getElementById('player-hp-bar-container');
-                if (!anchor || !layer) {
-                    return { leftPercent: 50, topPercent: 78 };
-                }
-                const layerRect = layer.getBoundingClientRect();
-                const anchorRect = anchor.getBoundingClientRect();
-                if (layerRect.width <= 0 || layerRect.height <= 0) {
-                    return { leftPercent: 50, topPercent: 78 };
-                }
-                const anchorCenterX = anchorRect.left + (anchorRect.width / 2);
-                const anchorCenterY = anchorRect.top + (anchorRect.height / 2);
-                const leftPercent = ((anchorCenterX - layerRect.left) / layerRect.width) * 100;
-                const topPercent = ((anchorCenterY - layerRect.top) / layerRect.height) * 100;
-                return {
-                    leftPercent: Math.max(0, Math.min(100, leftPercent)),
-                    topPercent: Math.max(0, Math.min(100, topPercent))
-                };
-            };
+            const getPopupAnchor = () => ({ leftPercent: 50, topPercent: 34 });
 
             const showBattlePopup = ({
                 kind = 'physical',
                 value = '',
-                target = 'enemy',
                 offsetX = null,
                 offsetY = null
             } = {}) => {
@@ -3425,8 +3400,12 @@
                 if (styleDef.strokeColor) {
                     textEl.style.webkitTextStroke = `1px ${styleDef.strokeColor}`;
                     textEl.style.paintOrder = 'stroke fill';
+                    textEl.style.textShadow = '0 0 3px rgba(51, 65, 85, 0.35)';
+                } else {
+                    textEl.style.webkitTextStroke = '0 transparent';
+                    textEl.style.textShadow = 'none';
                 }
-                const anchor = getPopupAnchor({ target, layer });
+                const anchor = getPopupAnchor();
                 const randomX = Number.isFinite(offsetX) ? offsetX : (Math.random() * 56) - 28;
                 const randomY = Number.isFinite(offsetY) ? offsetY : (Math.random() * 20) - 10;
 
@@ -3942,7 +3921,7 @@
                 let totalCpGain = 0;
                 hitResults.forEach((hit, index) => {
                     if (!hit.isHit) {
-                        showBattlePopup({ kind: 'miss', target: 'enemy' });
+                        showBattlePopup({ kind: 'miss' });
                         pushMiniLog(`${sourceLabel}${index + 1}: ${skill.damageType === 'Magical' ? '魔法' : '物理'} MISS (命中率 ${hit.hitChancePercent.toFixed(2)}%)`);
                         return;
                     }
@@ -3968,10 +3947,10 @@
                         : (hit.critTier === CritTier.DoubleCritical
                             ? 'doubleCritical'
                             : (hit.critTier === CritTier.Critical ? 'critical' : 'physical'));
-                    showBattlePopup({ kind: popupKind, value: damage.finalDamage, target: 'enemy' });
+                    showBattlePopup({ kind: popupKind, value: damage.finalDamage });
                     const guardRatio = damage.attackPart > 0 ? (damage.reducedDamage / damage.attackPart) : 1;
                     if (guardRatio <= GUARD_POPUP_THRESHOLD) {
-                        showBattlePopup({ kind: 'guard', target: 'enemy', offsetY: 14 });
+                        showBattlePopup({ kind: 'guard', offsetY: 14 });
                     }
                     const critLabel = skill.damageType === 'Magical'
                         ? ' / 非クリ'
@@ -4000,11 +3979,8 @@
 
                 if (battleState.enemyHp <= 0) {
                     const killExp = getKillExp(battleState.currentFloor);
-                    showBattlePopup({ kind: 'exp', value: killExp, target: 'enemy' });
-                    const expResult = addExperience(killExp);
-                    if (expResult.leveledUpCount > 0) {
-                        showBattlePopup({ kind: 'levelUp', target: 'playerHpBar' });
-                    }
+                    showBattlePopup({ kind: 'exp', value: killExp });
+                    addExperience(killExp);
                     pushMiniLog(`${enemy.name} を撃破 / EXP +${killExp}`);
                     const dropItem = attemptEquipmentDrop({
                         floor: battleState.currentFloor,
