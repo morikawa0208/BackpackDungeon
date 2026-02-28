@@ -962,23 +962,17 @@
             <div class="space-y-3">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                     <div id="equip-slot-1-label" class="flex items-center justify-between text-[11px] font-black text-slate-600"></div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div>
                         <button id="equip-slot-1" class="w-full bg-slate-800 text-white font-black py-2 rounded-2xl shadow-lg text-[11px] flex items-center justify-center gap-2">
                             <i class="fas fa-shield"></i>装備
-                        </button>
-                        <button id="equip-slot-1-compare" class="hidden w-full bg-white border border-slate-200 text-slate-600 font-black py-2 rounded-2xl shadow text-[11px] items-center justify-center gap-2">
-                            <i class="fas fa-scale-balanced"></i>比較
                         </button>
                     </div>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                     <div id="equip-slot-2-label" class="flex items-center justify-between text-[11px] font-black text-slate-600"></div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div>
                         <button id="equip-slot-2" class="w-full bg-slate-800 text-white font-black py-2 rounded-2xl shadow-lg text-[11px] flex items-center justify-center gap-2">
                             <i class="fas fa-shield"></i>装備
-                        </button>
-                        <button id="equip-slot-2-compare" class="hidden w-full bg-white border border-slate-200 text-slate-600 font-black py-2 rounded-2xl shadow text-[11px] items-center justify-center gap-2">
-                            <i class="fas fa-scale-balanced"></i>比較
                         </button>
                     </div>
                 </div>
@@ -2477,6 +2471,28 @@
                 sortOrder: 'newest'
             };
 
+            const SELL_PRICE_BY_RARITY = Object.freeze({
+                [ITEM_RARITY.normal]: 25,
+                [ITEM_RARITY.magic]: 90,
+                [ITEM_RARITY.rare]: 260,
+                [ITEM_RARITY.legendary]: 1000
+            });
+
+            const equipmentState = {
+                inventoryItems: [],
+                equipped: {
+                    weapon: null,
+                    armor: null,
+                    head: null,
+                    hands: null,
+                    feet: null,
+                    accessory1: null,
+                    accessory2: null
+                },
+                filter: 'all',
+                sortOrder: 'newest'
+            };
+
             const battleState = {
                 currentFloor: 1,
                 currentEnemy: null,
@@ -2577,6 +2593,10 @@
                 };
                 const equippedItems = Object.values(equipmentState.equipped).filter(Boolean);
                 equippedItems.forEach((item) => {
+                    if (item.isBroken) {
+                        return;
+                    }
+                    normalizeInventoryItem(item);
                     (item.finalStats || []).forEach(({ key, value }) => addValue(key, value));
                 });
                 return merged;
@@ -2641,6 +2661,61 @@
                 return safeMin + Math.floor(rng() * (safeMax - safeMin + 1));
             };
 
+            const ENHANCE_STEP_RATE = 0.03;
+            const getEnhanceSuccessRate = (level, enchantBonusRate = 0) => {
+                const baseRate = Math.max(15, 100 - (Math.max(0, level) * 8));
+                return Math.max(5, Math.min(100, baseRate + Math.max(0, enchantBonusRate)));
+            };
+
+            const getEnhanceCost = (item) => {
+                const level = Math.max(0, Math.floor(Number(item?.enhanceLevel) || 0));
+                return Math.max(10, Math.floor(getSellPrice(item) * (0.6 + (level * 0.35))));
+            };
+
+            const buildItemFinalStats = (item) => {
+                if (!item) {
+                    return [];
+                }
+                const enhanceLevel = Math.max(0, Math.floor(Number(item.enhanceLevel) || 0));
+                const enhanceRate = 1 + (enhanceLevel * ENHANCE_STEP_RATE);
+                const baseStats = [];
+                const mainBaseValue = Math.max(0, Math.floor(Number(item.mainBaseValue) || 0));
+                if (item.mainStatKey && mainBaseValue > 0) {
+                    baseStats.push({ key: item.mainStatKey, value: Math.max(0, Math.floor(mainBaseValue * enhanceRate)) });
+                }
+                const uniqueBaseValue = Math.max(0, Math.floor(Number(item.uniqueBaseValue) || 0));
+                if (item.uniqueStatKey && uniqueBaseValue > 0) {
+                    baseStats.push({ key: item.uniqueStatKey, value: Math.max(0, Math.floor(uniqueBaseValue * enhanceRate)) });
+                }
+                (item.affixes || []).forEach((affix) => {
+                    baseStats.push({ key: affix.key, value: Math.max(0, Math.floor(Number(affix.value) || 0)) });
+                });
+                return baseStats;
+            };
+
+            const normalizeInventoryItem = (item) => {
+                if (!item) {
+                    return item;
+                }
+                const normalized = item;
+                normalized.enhanceLevel = Math.max(0, Math.floor(Number(normalized.enhanceLevel) || 0));
+                normalized.isBroken = normalized.isBroken === true;
+                normalized.isFavorite = normalized.isFavorite === true;
+                if (!Number.isFinite(normalized.mainBaseValue) || !normalized.mainStatKey) {
+                    const firstStat = Array.isArray(normalized.finalStats) ? normalized.finalStats[0] : null;
+                    normalized.mainStatKey = normalized.mainStatKey || (firstStat ? firstStat.key : null);
+                    normalized.mainBaseValue = Math.max(0, Math.floor(Number(normalized.mainBaseValue ?? (firstStat ? firstStat.value : 0)) || 0));
+                }
+                if (!Number.isFinite(normalized.uniqueBaseValue) || !normalized.uniqueStatKey) {
+                    const secondStat = Array.isArray(normalized.finalStats) ? normalized.finalStats[1] : null;
+                    normalized.uniqueStatKey = normalized.uniqueStatKey || (secondStat ? secondStat.key : null);
+                    normalized.uniqueBaseValue = Math.max(0, Math.floor(Number(normalized.uniqueBaseValue ?? (secondStat ? secondStat.value : 0)) || 0));
+                }
+                normalized.finalStats = buildItemFinalStats(normalized);
+                normalized.mainSummary = `${normalized.mainStatKey}+${Math.max(0, Math.floor((normalized.finalStats[0] || {}).value || 0))}`;
+                return normalized;
+            };
+
             const generateItemFromBase = ({ floor, baseDefinition, rarity, rng = Math.random }) => {
                 const tier = toTierFromFloor(floor);
                 const rarityMultiplier = RARITY_MULTIPLIER[rarity] || 1;
@@ -2681,6 +2756,13 @@
                     floor,
                     tier,
                     affixes,
+                    mainStatKey: baseDefinition.mainStatKey,
+                    uniqueStatKey: baseDefinition.uniqueStatKey,
+                    mainBaseValue: Math.max(0, mainValue),
+                    uniqueBaseValue: Math.max(0, uniqueValue),
+                    enhanceLevel: 0,
+                    isBroken: false,
+                    isFavorite: false,
                     finalStats,
                     sellPrice,
                     mainSummary: `${baseDefinition.mainStatKey}+${Math.max(0, mainValue)}`
@@ -2795,14 +2877,15 @@
                 return item.slot;
             };
 
-            const openEnhanceModal = (instanceId) => {
-                const item = equipmentState.inventoryItems.find((entry) => entry.instanceId === instanceId);
-                const modal = document.getElementById('enhance-modal');
-                if (!item || !modal) {
+            const syncEnhanceModal = (item) => {
+                if (!item) {
                     return;
                 }
+                normalizeInventoryItem(item);
                 const level = Math.max(0, Math.floor(Number(item.enhanceLevel) || 0));
-                const cost = Math.max(10, Math.floor(getSellPrice(item) * (0.6 + (level * 0.35))));
+                const cost = getEnhanceCost(item);
+                const player = getPlayerCombatant();
+                const successRate = getEnhanceSuccessRate(level, player.secondaryStats.EnchantSuccessRateBonus || 0);
                 const titleEl = document.getElementById('enhance-modal-title');
                 const levelEl = document.getElementById('enhance-modal-level');
                 const costEl = document.getElementById('enhance-modal-cost');
@@ -2812,16 +2895,99 @@
                 const progressEl = document.getElementById('enhance-modal-progress');
                 const resultEl = document.getElementById('enhance-modal-result');
                 if (titleEl) titleEl.innerHTML = `<i class="fas fa-hammer text-slate-500"></i> ${item.name}`;
-                if (levelEl) levelEl.innerText = `+${level}`;
+                if (levelEl) levelEl.innerText = `+${level}${item.isBroken ? ' (破損)' : ''}`;
                 if (costEl) costEl.innerText = `${cost}G`;
-                if (previewEl) previewEl.innerText = `次強化で基礎ステータス+3%`;
-                if (warningEl) warningEl.innerText = '強化処理は次ステップで反映予定です。';
+                if (previewEl) previewEl.innerText = item.isBroken
+                    ? `修理後に強化再開できます（成功率 ${successRate.toFixed(1)}%）`
+                    : `成功率 ${successRate.toFixed(1)}% / 次強化で基礎ステータス+3%`;
+                if (warningEl) warningEl.innerText = level >= 10
+                    ? '失敗時は破損（修理が必要）'
+                    : (level >= 6 ? '失敗時は強化値-1' : '失敗時の強化値低下なし');
                 if (infoEl) infoEl.classList.remove('hidden');
                 if (progressEl) progressEl.classList.add('hidden');
                 if (resultEl) resultEl.classList.add('hidden');
+            };
+
+            const openEnhanceModal = (instanceId) => {
+                const item = equipmentState.inventoryItems.find((entry) => entry.instanceId === instanceId);
+                const modal = document.getElementById('enhance-modal');
+                if (!item || !modal) {
+                    return;
+                }
                 modal.dataset.itemId = instanceId;
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
+                syncEnhanceModal(item);
+            };
+
+            const runEnhancement = () => {
+                const modal = document.getElementById('enhance-modal');
+                const instanceId = modal ? modal.dataset.itemId : '';
+                const item = equipmentState.inventoryItems.find((entry) => entry.instanceId === instanceId);
+                if (!item) {
+                    return;
+                }
+                normalizeInventoryItem(item);
+                const cost = getEnhanceCost(item);
+                const warningEl = document.getElementById('enhance-modal-warning');
+                if (playerProgressState.gold < cost) {
+                    if (warningEl) warningEl.innerText = 'ゴールドが足りません。';
+                    return;
+                }
+
+                playerProgressState.gold = Math.max(0, playerProgressState.gold - cost);
+                let success = true;
+                let detailText = '';
+                let extraText = '';
+
+                if (item.isBroken) {
+                    item.isBroken = false;
+                    detailText = '装備を修理しました。';
+                    extraText = '次回から通常の強化判定になります。';
+                } else {
+                    const level = Math.max(0, Math.floor(Number(item.enhanceLevel) || 0));
+                    const successRate = getEnhanceSuccessRate(level, getPlayerCombatant().secondaryStats.EnchantSuccessRateBonus || 0);
+                    success = (Math.random() * 100) <= successRate;
+                    if (success) {
+                        item.enhanceLevel = level + 1;
+                        detailText = `+${item.enhanceLevel} になりました。`;
+                        extraText = '基礎ステータスに+3%が反映されます。';
+                    } else if (level >= 10) {
+                        item.isBroken = true;
+                        detailText = '強化失敗で装備が破損しました。';
+                        extraText = '再度強化すると修理されます。';
+                    } else if (level >= 6) {
+                        item.enhanceLevel = Math.max(0, level - 1);
+                        detailText = `強化失敗: +${item.enhanceLevel} に低下しました。`;
+                        extraText = '次回は再度チャレンジできます。';
+                    } else {
+                        detailText = '強化失敗: 強化値は維持されました。';
+                        extraText = 'もう一度挑戦できます。';
+                    }
+                }
+
+                normalizeInventoryItem(item);
+                const infoEl = document.getElementById('enhance-modal-info');
+                const progressEl = document.getElementById('enhance-modal-progress');
+                const resultEl = document.getElementById('enhance-modal-result');
+                const iconEl = document.getElementById('enhance-modal-result-icon');
+                const titleEl = document.getElementById('enhance-modal-result-title');
+                const detailEl = document.getElementById('enhance-modal-result-detail');
+                const extraEl = document.getElementById('enhance-modal-result-extra');
+                if (infoEl) infoEl.classList.add('hidden');
+                if (progressEl) progressEl.classList.add('hidden');
+                if (resultEl) resultEl.classList.remove('hidden');
+                if (iconEl) iconEl.innerHTML = success ? '<i class="fas fa-burst text-emerald-500 enhance-glow-success"></i>' : '<i class="fas fa-triangle-exclamation text-rose-500 enhance-glow-fail"></i>';
+                if (titleEl) titleEl.innerText = success ? '強化成功' : (item.isBroken ? '装備破損' : '強化失敗');
+                if (detailEl) detailEl.innerText = detailText;
+                if (extraEl) extraEl.innerText = extraText;
+
+                renderDerivedSecondaryStats({ primaryStats: playerProgressState.primaryStats, bonusStats: getEquippedBonusStats() });
+                renderStatusSummary();
+                renderBattleBars();
+                renderEquipmentSummary();
+                renderInventory();
+                persistBattleState();
             };
 
             const closeEnhanceModal = () => {
@@ -2919,12 +3085,7 @@
                 const slot2Label = document.getElementById('equip-slot-2-label');
                 const slot1Button = document.getElementById('equip-slot-1');
                 const slot2Button = document.getElementById('equip-slot-2');
-                const slot1Compare = document.getElementById('equip-slot-1-compare');
-                const slot2Compare = document.getElementById('equip-slot-2-compare');
                 const slot2Card = slot2Label ? slot2Label.closest('.rounded-2xl') : null;
-
-                if (slot1Compare) slot1Compare.classList.add('hidden');
-                if (slot2Compare) slot2Compare.classList.add('hidden');
 
                 if (item.slot === EQUIP_SLOT.accessory) {
                     if (slot2Card) slot2Card.classList.remove('hidden');
@@ -3022,24 +3183,24 @@
                     const isFavorite = item.isFavorite === true;
                     const namePrefix = `${isEquipped ? '<span class="text-emerald-600">[E]</span>' : ''}${isFavorite ? '<span class="text-amber-400">☆</span>' : ''}`;
                     const equipButtonClass = isEquipped
-                        ? 'equip-btn px-2 py-1 rounded-lg bg-rose-600 text-white text-[10px] font-black'
-                        : 'equip-btn px-2 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black';
+                        ? 'equip-btn px-2 py-1 rounded-lg bg-rose-600 text-white text-[10px] font-black flex items-center justify-center gap-1'
+                        : 'equip-btn px-2 py-1 rounded-lg bg-slate-800 text-white text-[10px] font-black flex items-center justify-center gap-1';
                     const sellDisabled = isEquipped || isFavorite;
-                    const sellText = isEquipped ? '装備中' : (isFavorite ? 'お気に入り中' : `売却 ${getSellPrice(item)}G`);
+                    const sellText = isEquipped ? '装備中' : (isFavorite ? '保護中' : `売却 ${getSellPrice(item)}G`);
                     row.innerHTML = `
-                        <div class="space-y-2">
-                            <div class="min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
                                 <div class="text-[11px] font-black rarity-${item.rarity}"><i class="fas ${item.iconClass}"></i> ${namePrefix}${item.name}</div>
                                 <div class="text-[10px] text-slate-500 font-bold mt-1">${getSlotLabel(item.slot)} / ${item.mainSummary}</div>
                                 <div class="text-[9px] text-slate-400 mt-1">固有: ${uniqueStat}</div>
                                 <div class="text-[9px] text-slate-400 mt-1">${affixText}</div>
                             </div>
-                            <div class="grid grid-cols-1 gap-1">
-                                <button class="${equipButtonClass}" data-item-id="${item.instanceId}">${isEquipped ? 'はずす' : '装備'}</button>
-                                <button class="sell-btn px-2 py-1 rounded-lg border text-[10px] font-black ${sellDisabled ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-amber-50 text-amber-700 border-amber-300'}" data-item-id="${item.instanceId}" ${sellDisabled ? 'disabled' : ''}>${sellText}</button>
-                                <button class="favorite-btn px-2 py-1 rounded-lg border text-[10px] font-black ${isFavorite ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-600 border-slate-200'}" data-item-id="${item.instanceId}">${isFavorite ? 'お気に入り解除' : 'お気に入り'}</button>
-                                <button class="enhance-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-indigo-50 text-indigo-700 border-indigo-300" data-item-id="${item.instanceId}">強化</button>
-                                <button class="compare-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-white text-slate-600 border-slate-200" data-item-id="${item.instanceId}">比較</button>
+                            <div class="w-[96px] grid grid-cols-1 gap-1">
+                                <button class="${equipButtonClass}" data-item-id="${item.instanceId}"><i class="fas ${isEquipped ? 'fa-link-slash' : 'fa-shield'}"></i>${isEquipped ? 'はずす' : '装備'}</button>
+                                <button class="sell-btn px-2 py-1 rounded-lg border text-[10px] font-black flex items-center justify-center gap-1 ${sellDisabled ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-amber-50 text-amber-700 border-amber-300'}" data-item-id="${item.instanceId}" ${sellDisabled ? 'disabled' : ''}><i class="fas fa-coins"></i>${sellText}</button>
+                                <button class="favorite-btn px-2 py-1 rounded-lg border text-[10px] font-black flex items-center justify-center gap-1 ${isFavorite ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-slate-600 border-slate-200'}" data-item-id="${item.instanceId}"><i class="fas ${isFavorite ? 'fa-star' : 'fa-star-half-stroke'}"></i>${isFavorite ? 'お気解除' : 'お気入り'}</button>
+                                <button class="enhance-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-indigo-50 text-indigo-700 border-indigo-300 flex items-center justify-center gap-1" data-item-id="${item.instanceId}"><i class="fas fa-hammer"></i>強化</button>
+                                <button class="compare-btn px-2 py-1 rounded-lg border text-[10px] font-black bg-white text-slate-600 border-slate-200 flex items-center justify-center gap-1" data-item-id="${item.instanceId}"><i class="fas fa-scale-balanced"></i>比較</button>
                             </div>
                         </div>`;
                     list.appendChild(row);
@@ -3555,11 +3716,18 @@
                     : buildEnemyForFloor({ floor: battleState.currentFloor, affixKey: 'normal' });
                 battleState.enemyHp = battleState.currentEnemy.stats.maxHp;
                 if (persisted && persisted.equipmentState) {
-                    equipmentState.inventoryItems = Array.isArray(persisted.equipmentState.inventoryItems) ? persisted.equipmentState.inventoryItems : [];
+                    equipmentState.inventoryItems = Array.isArray(persisted.equipmentState.inventoryItems)
+                        ? persisted.equipmentState.inventoryItems.map((item) => normalizeInventoryItem(item))
+                        : [];
                     equipmentState.equipped = {
                         ...equipmentState.equipped,
                         ...(persisted.equipmentState.equipped || {})
                     };
+                    Object.keys(equipmentState.equipped).forEach((slotKey) => {
+                        if (equipmentState.equipped[slotKey]) {
+                            equipmentState.equipped[slotKey] = normalizeInventoryItem(equipmentState.equipped[slotKey]);
+                        }
+                    });
                     equipmentState.filter = persisted.equipmentState.filter || 'all';
                     equipmentState.sortOrder = persisted.equipmentState.sortOrder || 'newest';
                 }
@@ -3887,20 +4055,14 @@
                 if (enhanceStartBtn) {
                     enhanceStartBtn.addEventListener('click', (event) => {
                         event.preventDefault();
-                        const warningEl = document.getElementById('enhance-modal-warning');
-                        if (warningEl) {
-                            warningEl.innerText = '強化処理は次ステップで反映予定です。';
-                        }
+                        runEnhancement();
                     });
                 }
                 const enhanceRepeatBtn = document.getElementById('enhance-modal-repeat');
                 if (enhanceRepeatBtn) {
                     enhanceRepeatBtn.addEventListener('click', (event) => {
                         event.preventDefault();
-                        const itemId = (document.getElementById('enhance-modal') || {}).dataset?.itemId;
-                        if (itemId) {
-                            openEnhanceModal(itemId);
-                        }
+                        runEnhancement();
                     });
                 }
 
