@@ -614,8 +614,7 @@
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>追加ダメージ%</span><span id="stat-dmg">0%</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>追加防御%</span><span id="stat-dr">0%</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>ドロップ率補正</span><span id="stat-drop">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>レアドロ率補正</span><span id="stat-rare-drop">0%</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>エンチャ成功補正</span><span id="stat-enchant-success">0%</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span>エリート遭遇率</span><span id="stat-elite-encounter">0%</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>ゴールド獲得量補正</span><span id="stat-gold-gain">0%</span></div>
                     <div class="flex justify-between border-b border-slate-700 pb-1"><span>経験値獲得量補正</span><span id="stat-exp-bonus">0%</span></div>
                 </div>
@@ -1129,8 +1128,7 @@
                         <div class="flex justify-between"><span>追加ダメージ%</span><span id="detail-stat-dmg">0(0+0)%</span></div>
                         <div class="flex justify-between"><span>追加防御%</span><span id="detail-stat-dr">0(0+0)%</span></div>
                         <div class="flex justify-between"><span>ドロップ率補正</span><span id="detail-stat-drop">0(0+0)%</span></div>
-                        <div class="flex justify-between"><span>レアドロ率補正</span><span id="detail-stat-rare-drop">0(0+0)%</span></div>
-                        <div class="flex justify-between"><span>エンチャ成功補正</span><span id="detail-stat-enchant-success">0(0+0)%</span></div>
+                        <div class="flex justify-between"><span>エリート遭遇率</span><span id="detail-stat-elite-encounter">0(0+0)%</span></div>
                         <div class="flex justify-between"><span>ゴールド獲得量補正</span><span id="detail-stat-gold-gain">0(0+0)%</span></div>
                         <div class="flex justify-between"><span>経験値獲得量補正</span><span id="detail-stat-exp-bonus">0(0+0)%</span></div>
                     </div>
@@ -1170,8 +1168,8 @@
                         <li>クリティカル率：物理ヒットのクリティカル発生率です。</li>
                         <li>追加ダメージ%：与ダメージを後段で増やす補正です。</li>
                         <li>追加防御%：防御力そのものを割合で増やす補正です。</li>
-                        <li>ドロップ率補正 / レアドロ率補正：報酬品質に関わる補正です。</li>
-                        <li>エンチャ成功補正：強化系の成功率を底上げします。</li>
+                        <li>ドロップ率補正：装備品が落ちる確率を高めます。</li>
+                        <li>エリート遭遇率：エリート個体に出会う確率を高めます。</li>
                         <li>ゴールド獲得量補正 / 経験値獲得量補正：取得報酬量を増やします。</li>
                     </ul>
                 </div>
@@ -1289,7 +1287,6 @@
                 BonusDamagePercent: 'BonusDamagePercent',
                 BonusDefensePercent: 'BonusDefensePercent',
                 DropRateBonus: 'DropRateBonus',
-                RareDropRateBonus: 'RareDropRateBonus',
                 EnchantSuccessRateBonus: 'EnchantSuccessRateBonus',
                 GoldGainRate: 'GoldGainRate',
                 ExpGainRate: 'ExpGainRate',
@@ -1338,7 +1335,6 @@
                     [SecondaryStatKey.BonusDamagePercent]: pickNonNegative(SecondaryStatKey.BonusDamagePercent),
                     [SecondaryStatKey.BonusDefensePercent]: pickNonNegative(SecondaryStatKey.BonusDefensePercent),
                     [SecondaryStatKey.DropRateBonus]: pickNonNegative(SecondaryStatKey.DropRateBonus),
-                    [SecondaryStatKey.RareDropRateBonus]: pickNonNegative(SecondaryStatKey.RareDropRateBonus),
                     [SecondaryStatKey.EnchantSuccessRateBonus]: pickNonNegative(SecondaryStatKey.EnchantSuccessRateBonus),
                     [SecondaryStatKey.GoldGainRate]: pickNonNegative(SecondaryStatKey.GoldGainRate),
                     [SecondaryStatKey.ExpGainRate]: pickNonNegative(SecondaryStatKey.ExpGainRate),
@@ -1400,7 +1396,6 @@
                         [SecondaryStatKey.AvoidRate]: baseConfig.BaseAvoid + totalPrimary.DEX * 0.08,
                         [SecondaryStatKey.CriticalChance]: baseConfig.BaseCrit + totalPrimary.DEX * 0.05 + totalPrimary.LUK * 0.10,
                         [SecondaryStatKey.DropRateBonus]: totalPrimary.LUK * 0.20,
-                        [SecondaryStatKey.RareDropRateBonus]: totalPrimary.LUK * 0.05,
                         [SecondaryStatKey.EnchantSuccessRateBonus]: totalPrimary.LUK * 0.03,
                         [SecondaryStatKey.GoldGainRate]: totalPrimary.LUK * 0.05,
                         [SecondaryStatKey.ExpGainRate]: totalPrimary.LUK * 0.03,
@@ -1414,14 +1409,13 @@
                         [SecondaryStatKey.MaxCP]: Math.max(0, roundingMode(baseValues[SecondaryStatKey.MaxCP] + bonus[SecondaryStatKey.MaxCP])),
                         [SecondaryStatKey.PhysicalAttack]: Math.max(0, roundingMode(baseValues[SecondaryStatKey.PhysicalAttack] + bonus[SecondaryStatKey.PhysicalAttack])),
                         [SecondaryStatKey.MagicAttack]: Math.max(0, roundingMode(baseValues[SecondaryStatKey.MagicAttack] + bonus[SecondaryStatKey.MagicAttack])),
-                        DefenseBase: Math.max(0, roundingMode(baseValues.DefenseBase + bonus.DefenseBase)),
+                        DefenseBase: Math.max(0, roundingMode(baseValues.DefenseBase + bonus.DefenseBase + bonus[SecondaryStatKey.Defense])),
                         [SecondaryStatKey.HitRate]: Math.max(0, baseValues[SecondaryStatKey.HitRate] + bonus[SecondaryStatKey.HitRate]),
                         [SecondaryStatKey.AvoidRate]: Math.max(0, baseValues[SecondaryStatKey.AvoidRate] + bonus[SecondaryStatKey.AvoidRate]),
                         [SecondaryStatKey.CriticalChance]: Math.max(0, baseValues[SecondaryStatKey.CriticalChance] + bonus[SecondaryStatKey.CriticalChance]),
                         [SecondaryStatKey.BonusDamagePercent]: Math.max(0, baseValues[SecondaryStatKey.BonusDamagePercent]),
                         [SecondaryStatKey.BonusDefensePercent]: Math.max(0, baseValues[SecondaryStatKey.BonusDefensePercent]),
                         [SecondaryStatKey.DropRateBonus]: Math.max(0, baseValues[SecondaryStatKey.DropRateBonus] + bonus[SecondaryStatKey.DropRateBonus]),
-                        [SecondaryStatKey.RareDropRateBonus]: Math.max(0, baseValues[SecondaryStatKey.RareDropRateBonus] + bonus[SecondaryStatKey.RareDropRateBonus]),
                         [SecondaryStatKey.EnchantSuccessRateBonus]: Math.max(0, baseValues[SecondaryStatKey.EnchantSuccessRateBonus] + bonus[SecondaryStatKey.EnchantSuccessRateBonus]),
                         [SecondaryStatKey.GoldGainRate]: Math.max(0, baseValues[SecondaryStatKey.GoldGainRate] + bonus[SecondaryStatKey.GoldGainRate]),
                         [SecondaryStatKey.ExpGainRate]: Math.max(0, baseValues[SecondaryStatKey.ExpGainRate] + bonus[SecondaryStatKey.ExpGainRate]),
@@ -1443,7 +1437,6 @@
                         [SecondaryStatKey.BonusDamagePercent]: totalValues[SecondaryStatKey.BonusDamagePercent],
                         [SecondaryStatKey.BonusDefensePercent]: totalValues[SecondaryStatKey.BonusDefensePercent],
                         [SecondaryStatKey.DropRateBonus]: totalValues[SecondaryStatKey.DropRateBonus],
-                        [SecondaryStatKey.RareDropRateBonus]: totalValues[SecondaryStatKey.RareDropRateBonus],
                         [SecondaryStatKey.EnchantSuccessRateBonus]: totalValues[SecondaryStatKey.EnchantSuccessRateBonus],
                         [SecondaryStatKey.GoldGainRate]: totalValues[SecondaryStatKey.GoldGainRate],
                         [SecondaryStatKey.ExpGainRate]: totalValues[SecondaryStatKey.ExpGainRate],
@@ -1484,13 +1477,13 @@
                         [SecondaryStatKey.PhysicalAttack]: asNonNegative(bonusStats[SecondaryStatKey.PhysicalAttack]),
                         [SecondaryStatKey.MagicAttack]: asNonNegative(bonusStats[SecondaryStatKey.MagicAttack]),
                         DefenseBase: asNonNegative(bonusStats.DefenseBase),
+                        [SecondaryStatKey.Defense]: asNonNegative(bonusStats[SecondaryStatKey.Defense]),
                         [SecondaryStatKey.HitRate]: asNonNegative(bonusStats[SecondaryStatKey.HitRate]),
                         [SecondaryStatKey.AvoidRate]: asNonNegative(bonusStats[SecondaryStatKey.AvoidRate]),
                         [SecondaryStatKey.CriticalChance]: asNonNegative(bonusStats[SecondaryStatKey.CriticalChance]),
                         [SecondaryStatKey.BonusDamagePercent]: asNonNegative(bonusStats[SecondaryStatKey.BonusDamagePercent]),
                         [SecondaryStatKey.BonusDefensePercent]: asNonNegative(bonusStats[SecondaryStatKey.BonusDefensePercent]),
                         [SecondaryStatKey.DropRateBonus]: asNonNegative(bonusStats[SecondaryStatKey.DropRateBonus]),
-                        [SecondaryStatKey.RareDropRateBonus]: asNonNegative(bonusStats[SecondaryStatKey.RareDropRateBonus]),
                         [SecondaryStatKey.EnchantSuccessRateBonus]: asNonNegative(bonusStats[SecondaryStatKey.EnchantSuccessRateBonus]),
                         [SecondaryStatKey.GoldGainRate]: asNonNegative(bonusStats[SecondaryStatKey.GoldGainRate]),
                         [SecondaryStatKey.ExpGainRate]: asNonNegative(bonusStats[SecondaryStatKey.ExpGainRate]),
@@ -1954,8 +1947,7 @@
                     { id: 'stat-dmg', key: SecondaryStatKey.BonusDamagePercent, isPercent: true, digits: 2 },
                     { id: 'stat-dr', key: SecondaryStatKey.BonusDefensePercent, isPercent: true, digits: 2 },
                     { id: 'stat-drop', key: SecondaryStatKey.DropRateBonus, isPercent: true, digits: 2 },
-                    { id: 'stat-rare-drop', key: SecondaryStatKey.RareDropRateBonus, isPercent: true, digits: 2 },
-                    { id: 'stat-enchant-success', key: SecondaryStatKey.EnchantSuccessRateBonus, isPercent: true, digits: 2 },
+                    { id: 'stat-elite-encounter', key: SecondaryStatKey.EliteEncounterRate, isPercent: true, digits: 2 },
                     { id: 'stat-gold-gain', key: SecondaryStatKey.GoldGainRate, isPercent: true, digits: 2 },
                     { id: 'stat-exp-bonus', key: SecondaryStatKey.ExpGainRate, isPercent: true, digits: 2 }
                 ];
@@ -2002,8 +1994,7 @@
                     { id: 'detail-stat-dmg', key: SecondaryStatKey.BonusDamagePercent, isPercent: true, digits: 2 },
                     { id: 'detail-stat-dr', key: SecondaryStatKey.BonusDefensePercent, isPercent: true, digits: 2 },
                     { id: 'detail-stat-drop', key: SecondaryStatKey.DropRateBonus, isPercent: true, digits: 2 },
-                    { id: 'detail-stat-rare-drop', key: SecondaryStatKey.RareDropRateBonus, isPercent: true, digits: 2 },
-                    { id: 'detail-stat-enchant-success', key: SecondaryStatKey.EnchantSuccessRateBonus, isPercent: true, digits: 2 },
+                    { id: 'detail-stat-elite-encounter', key: SecondaryStatKey.EliteEncounterRate, isPercent: true, digits: 2 },
                     { id: 'detail-stat-gold-gain', key: SecondaryStatKey.GoldGainRate, isPercent: true, digits: 2 },
                     { id: 'detail-stat-exp-bonus', key: SecondaryStatKey.ExpGainRate, isPercent: true, digits: 2 }
                 ];
@@ -2032,7 +2023,7 @@
                 'status-exp', 'status-next',
                 'stat-max-hp', 'stat-max-mp', 'stat-atk-flat', 'stat-magic-atk',
                 'stat-def-flat', 'stat-hit', 'stat-crit', 'stat-dmg', 'stat-dr',
-                'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-rare-drop', 'stat-enchant-success',
+                'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-elite-encounter',
                 'stat-gold-gain'
             ];
 
@@ -2052,7 +2043,7 @@
                     }
                 });
 
-                const percentStatIds = ['stat-crit', 'stat-dmg', 'stat-dr', 'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-rare-drop', 'stat-enchant-success', 'stat-gold-gain'];
+                const percentStatIds = ['stat-crit', 'stat-dmg', 'stat-dr', 'stat-eva', 'stat-exp-bonus', 'stat-drop', 'stat-elite-encounter', 'stat-gold-gain'];
                 percentStatIds.forEach((id) => {
                     const el = document.getElementById(id);
                     if (el) {
@@ -2064,12 +2055,12 @@
                     'detail-primary-str', 'detail-primary-int', 'detail-primary-vit', 'detail-primary-dex', 'detail-primary-luk',
                     'detail-stat-max-hp', 'detail-stat-max-mp', 'detail-stat-atk-flat', 'detail-stat-magic-atk', 'detail-stat-def-flat',
                     'detail-stat-hit', 'detail-stat-eva', 'detail-stat-crit', 'detail-stat-dmg', 'detail-stat-dr',
-                    'detail-stat-drop', 'detail-stat-rare-drop', 'detail-stat-enchant-success', 'detail-stat-gold-gain', 'detail-stat-exp-bonus'
+                    'detail-stat-drop', 'detail-stat-elite-encounter', 'detail-stat-gold-gain', 'detail-stat-exp-bonus'
                 ];
                 detailIds.forEach((id) => {
                     const el = document.getElementById(id);
                     if (el) {
-                        const isPercentDetail = ['detail-stat-eva', 'detail-stat-crit', 'detail-stat-dmg', 'detail-stat-dr', 'detail-stat-drop', 'detail-stat-rare-drop', 'detail-stat-enchant-success', 'detail-stat-gold-gain', 'detail-stat-exp-bonus'].includes(id);
+                        const isPercentDetail = ['detail-stat-eva', 'detail-stat-crit', 'detail-stat-dmg', 'detail-stat-dr', 'detail-stat-drop', 'detail-stat-elite-encounter', 'detail-stat-gold-gain', 'detail-stat-exp-bonus'].includes(id);
                         el.innerText = isPercentDetail ? '0(0+0)%' : '0(0+0)';
                     }
                 });
@@ -3506,13 +3497,22 @@
                 damageType: normalizeDamageType(defaultAttack.damageKind)
             });
 
+            const resolveEnemyAffixKeyForEncounter = (rng = Math.random) => {
+                const player = getPlayerCombatant();
+                const eliteRatePercent = Math.max(0, Number(player.secondaryStats[SecondaryStatKey.EliteEncounterRate] || 0));
+                const eliteChance = Math.min(1, eliteRatePercent / 100);
+                return rng() < eliteChance ? 'elite' : 'normal';
+            };
+
             const advanceEnemy = () => {
                 if (battleState.currentFloor < MAX_IMPLEMENTED_FLOOR) {
                     battleState.currentFloor += 1;
                 }
-                battleState.currentEnemy = buildEnemyForFloor({ floor: battleState.currentFloor, affixKey: 'normal' });
+                const affixKey = resolveEnemyAffixKeyForEncounter();
+                battleState.currentEnemy = buildEnemyForFloor({ floor: battleState.currentFloor, affixKey });
                 battleState.enemyHp = battleState.currentEnemy.stats.maxHp;
-                pushMiniLog(`次の敵: ${battleState.currentEnemy.name} (Floor ${battleState.currentFloor})`);
+                const affixLabel = affixKey === 'elite' ? ' [Elite]' : '';
+                pushMiniLog(`次の敵: ${battleState.currentEnemy.name}${affixLabel} (Floor ${battleState.currentFloor})`);
                 persistBattleState();
                 renderBattleBars();
             };
@@ -3543,7 +3543,8 @@
                 playerProgressState.exp = Math.max(0, playerProgressState.exp - lostExp);
                 battleState.currentFloor = clampFloor(battleState.currentFloor - DEATH_FLOOR_PENALTY);
                 battleState.playerCp = 0;
-                battleState.currentEnemy = buildEnemyForFloor({ floor: battleState.currentFloor, affixKey: 'normal' });
+                const affixKey = resolveEnemyAffixKeyForEncounter();
+                battleState.currentEnemy = buildEnemyForFloor({ floor: battleState.currentFloor, affixKey });
                 battleState.enemyHp = battleState.currentEnemy.stats.maxHp;
                 renderStatusSummary();
                 return { lostExp };
@@ -3651,9 +3652,43 @@
 
             const AUTO_SLOT_ORDER = Object.freeze(['auto2', 'auto1']);
 
+            const BATTLE_RUNTIME_STATE_KEY = 'battle_runtime_state_v2';
+            const LEGACY_BATTLE_RUNTIME_STATE_KEYS = Object.freeze([
+                'battle_runtime_state_v1',
+                'battle_runtime_state'
+            ]);
+
+            const parsePersistedBattleState = (raw) => {
+                if (!raw) {
+                    return null;
+                }
+                const parsed = JSON.parse(raw);
+                if (!parsed || typeof parsed !== 'object') {
+                    return null;
+                }
+                const loadedFloor = clampFloor(parsed.currentFloor);
+                const loadedCp = Number.isFinite(parsed.playerCp) ? Math.max(0, Math.floor(parsed.playerCp)) : 0;
+                const loadedEnemy = parsed.currentEnemy && parsed.currentEnemy.stats
+                    ? {
+                        ...parsed.currentEnemy,
+                        floor: clampFloor(parsed.currentEnemy.floor || loadedFloor),
+                        tier: toTierFromFloor(parsed.currentEnemy.floor || loadedFloor),
+                        enemyPoolIndex: Number.isFinite(parsed.currentEnemy.enemyPoolIndex) ? Math.max(0, Math.floor(parsed.currentEnemy.enemyPoolIndex)) : 0,
+                        enemyPoolSize: Number.isFinite(parsed.currentEnemy.enemyPoolSize) ? Math.max(1, Math.floor(parsed.currentEnemy.enemyPoolSize)) : 3
+                    }
+                    : null;
+                const loadedEquipmentState = parsed.equipmentState && typeof parsed.equipmentState === 'object' ? parsed.equipmentState : null;
+                return {
+                    currentFloor: loadedFloor,
+                    playerCp: loadedCp,
+                    currentEnemy: loadedEnemy,
+                    equipmentState: loadedEquipmentState
+                };
+            };
+
             const persistBattleState = () => {
                 try {
-                    localStorage.setItem('battle_runtime_state_v2', JSON.stringify({
+                    localStorage.setItem(BATTLE_RUNTIME_STATE_KEY, JSON.stringify({
                         currentFloor: battleState.currentFloor,
                         playerCp: battleState.playerCp,
                         currentEnemy: battleState.currentEnemy,
@@ -3666,32 +3701,22 @@
 
             const loadPersistedBattleState = () => {
                 try {
-                    const raw = localStorage.getItem('battle_runtime_state_v2');
-                    if (!raw) {
-                        return null;
+                    const latestRaw = localStorage.getItem(BATTLE_RUNTIME_STATE_KEY);
+                    const latestParsed = parsePersistedBattleState(latestRaw);
+                    if (latestParsed) {
+                        return latestParsed;
                     }
-                    const parsed = JSON.parse(raw);
-                    if (!parsed || typeof parsed !== 'object') {
-                        return null;
-                    }
-                    const loadedFloor = clampFloor(parsed.currentFloor);
-                    const loadedCp = Number.isFinite(parsed.playerCp) ? Math.max(0, Math.floor(parsed.playerCp)) : 0;
-                    const loadedEnemy = parsed.currentEnemy && parsed.currentEnemy.stats
-                        ? {
-                            ...parsed.currentEnemy,
-                            floor: clampFloor(parsed.currentEnemy.floor || loadedFloor),
-                            tier: toTierFromFloor(parsed.currentEnemy.floor || loadedFloor),
-                            enemyPoolIndex: Number.isFinite(parsed.currentEnemy.enemyPoolIndex) ? Math.max(0, Math.floor(parsed.currentEnemy.enemyPoolIndex)) : 0,
-                            enemyPoolSize: Number.isFinite(parsed.currentEnemy.enemyPoolSize) ? Math.max(1, Math.floor(parsed.currentEnemy.enemyPoolSize)) : 3
+
+                    for (const legacyKey of LEGACY_BATTLE_RUNTIME_STATE_KEYS) {
+                        const legacyParsed = parsePersistedBattleState(localStorage.getItem(legacyKey));
+                        if (!legacyParsed) {
+                            continue;
                         }
-                        : null;
-                    const loadedEquipmentState = parsed.equipmentState && typeof parsed.equipmentState === 'object' ? parsed.equipmentState : null;
-                    return {
-                        currentFloor: loadedFloor,
-                        playerCp: loadedCp,
-                        currentEnemy: loadedEnemy,
-                        equipmentState: loadedEquipmentState
-                    };
+                        localStorage.setItem(BATTLE_RUNTIME_STATE_KEY, JSON.stringify(legacyParsed));
+                        return legacyParsed;
+                    }
+
+                    return null;
                 } catch (e) {
                     return null;
                 }
@@ -3883,7 +3908,7 @@
                 battleState.currentFloor = persisted ? persisted.currentFloor : 1;
                 battleState.currentEnemy = persisted && persisted.currentEnemy
                     ? persisted.currentEnemy
-                    : buildEnemyForFloor({ floor: battleState.currentFloor, affixKey: 'normal' });
+                    : buildEnemyForFloor({ floor: battleState.currentFloor, affixKey: resolveEnemyAffixKeyForEncounter() });
                 battleState.enemyHp = battleState.currentEnemy.stats.maxHp;
                 if (persisted && persisted.equipmentState) {
                     equipmentState.inventoryItems = Array.isArray(persisted.equipmentState.inventoryItems)
@@ -4048,7 +4073,7 @@
                 renderStatusSummary();
                 initializeBattleSimulation();
                 closeDeathOverlay();
-                switchPage('status');
+                switchPage('battle');
 
                 const secondaryBreakdownBtn = document.getElementById('secondary-breakdown-btn');
                 if (secondaryBreakdownBtn) {
