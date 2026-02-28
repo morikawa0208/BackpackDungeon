@@ -85,6 +85,7 @@
         }
         #damage-layer {
             overflow: hidden;
+            z-index: 90;
         }
 
         .mini-log {
@@ -325,7 +326,7 @@
             <!-- Player Status Section -->
             <div class="bg-white border rounded-2xl p-4 shadow-sm space-y-3 mb-2">
                 <div class="space-y-1.5">
-                    <div class="bar-container">
+                    <div id="player-hp-bar-container" class="bar-container">
                         <div id="player-hp-bar" class="bar-fill hp-fill"></div>
                         <div class="bar-text">HP: <span id="player-hp-text">100/100</span></div>
                     </div>
@@ -1792,16 +1793,16 @@
             const GUARD_POPUP_THRESHOLD = 0.45;
 
             const BATTLE_POPUP_STYLE = Object.freeze({
-                physical: { color: '#ffffff', strokeColor: 'rgba(15, 23, 42, 0.95)' },
-                magical: { color: '#facc15', strokeColor: 'rgba(120, 53, 15, 0.95)' },
-                critical: { color: '#ef4444', label: 'Critical!', strokeColor: 'rgba(69, 10, 10, 0.95)' },
-                doubleCritical: { color: '#ef4444', label: 'Double!', strokeColor: 'rgba(69, 10, 10, 0.95)' },
-                heal: { color: '#22c55e', prefix: '+', strokeColor: 'rgba(20, 83, 45, 0.95)' },
-                miss: { color: '#94a3b8', text: 'MISS', strokeColor: 'rgba(15, 23, 42, 0.9)' },
-                guard: { color: '#38bdf8', text: 'Guard', strokeColor: 'rgba(12, 74, 110, 0.95)' },
-                drain: { color: '#a855f7', label: 'Drain', prefix: '+', strokeColor: 'rgba(59, 7, 100, 0.95)' },
-                exp: { color: '#38bdf8', prefix: 'EXP +', strokeColor: 'rgba(8, 47, 73, 0.95)' },
-                levelUp: { color: '#fbbf24', text: 'Level Up!', strokeColor: 'rgba(120, 53, 15, 0.95)' }
+                physical: { color: '#ffffff', strokeColor: 'rgba(51, 65, 85, 0.55)' },
+                magical: { color: '#facc15' },
+                critical: { color: '#ef4444', label: 'Critical!' },
+                doubleCritical: { color: '#ef4444', label: 'Double!' },
+                heal: { color: '#22c55e', prefix: '+' },
+                miss: { color: '#94a3b8', text: 'MISS' },
+                guard: { color: '#38bdf8', text: 'Guard' },
+                drain: { color: '#a855f7', label: 'Drain', prefix: '+' },
+                exp: { color: '#38bdf8', prefix: 'EXP +' },
+                levelUp: { color: '#fbbf24', text: 'Level Up!' }
             });
 
             const playerProgressState = {
@@ -3370,7 +3371,7 @@
                 if (target !== 'playerHpBar') {
                     return { leftPercent: 50, topPercent: 34 };
                 }
-                const anchor = document.getElementById('player-hp-bar');
+                const anchor = document.getElementById('player-hp-bar-container');
                 if (!anchor || !layer) {
                     return { leftPercent: 50, topPercent: 78 };
                 }
@@ -3405,7 +3406,10 @@
                 const textEl = document.createElement('div');
                 textEl.className = 'damage-text';
                 textEl.style.color = styleDef.color;
-                textEl.style.webkitTextStrokeColor = styleDef.strokeColor || 'rgba(15, 23, 42, 0.9)';
+                if (styleDef.strokeColor) {
+                    textEl.style.webkitTextStroke = `1px ${styleDef.strokeColor}`;
+                    textEl.style.paintOrder = 'stroke fill';
+                }
                 const anchor = getPopupAnchor({ target, layer });
                 const randomX = Number.isFinite(offsetX) ? offsetX : (Math.random() * 56) - 28;
                 const randomY = Number.isFinite(offsetY) ? offsetY : (Math.random() * 20) - 10;
