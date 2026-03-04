@@ -59,10 +59,18 @@
             <i class="fa-solid fa-map mb-1 text-lg"></i><span class="text-[10px]">マップ</span>
         </button>
         <button onclick="Game.showSkillMenu()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-l border-r border-gray-100 w-1/5">
-            <i class="fa-solid fa-star mb-1 text-lg"></i><span class="text-[10px]">スキル</span>
+            <div class="relative inline-block">
+                <i class="fa-solid fa-star mb-1 text-lg"></i>
+                <span id="badge-skill" class="absolute -top-1.5 -right-2.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow border border-white hidden"></span>
+            </div>
+            <span class="text-[10px]">スキル</span>
         </button>
         <button onclick="Game.showStatus()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/5">
-            <i class="fa-solid fa-user mb-1 text-lg"></i><span class="text-[10px]">ステータス</span>
+            <div class="relative inline-block">
+                <i class="fa-solid fa-user mb-1 text-lg"></i>
+                <span id="badge-status" class="absolute -top-1.5 -right-2.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow border border-white hidden"></span>
+            </div>
+            <span class="text-[10px]">ステータス</span>
         </button>
         <button onclick="Game.showInventory()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/5 relative">
             <i class="fa-solid fa-toolbox mb-1 text-lg"></i><span class="text-[10px]">装備/鞄</span>
@@ -86,46 +94,46 @@
 // ==========================================
 const JOBS = {
     warrior: { 
-        name: '戦士', hp: 60, mp: 10, str: 8, vit: 6, dex: 4, int: 2, luk: 3, icon: 'fa-shield-halved',
+        name: '戦士', hp: 60, cp: 10, str: 8, vit: 6, dex: 4, int: 2, luk: 3, icon: 'fa-shield-halved',
         skills: [
-            { id: 'w_a1', name: '全力斬り', type: 'active', cost: 5, ct: 2, maxLv: 5, target: 'single', desc: (lv) => `単体にATKx${(1.5 + lv*0.5).toFixed(1)}ダメージ` },
-            { id: 'w_a2', name: 'なぎ払い', type: 'active', cost: 8, ct: 3, maxLv: 5, target: 'all', desc: (lv) => `全体にATKx${(0.8 + lv*0.2).toFixed(1)}ダメージ` },
-            { id: 'w_s1', name: 'ウォークライ', type: 'support', cost: 10, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンATK+${20 + lv*10}%` },
-            { id: 'w_s2', name: '鉄の意志', type: 'support', cost: 5, ct: 4, maxLv: 5, target: 'self', desc: (lv) => `3ターンDEF+${20 + lv*10}%` },
-            { id: 'w_p1', name: '頑強', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `最大HP+${lv * 10}` },
-            { id: 'w_p2', name: '剛腕', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `STR+${lv * 2}` }
+            { id: 'w_a1', name: '全力斬り', type: 'active', cost: 5, gain: 0, ct: 2, maxLv: 5, target: 'single', desc: (lv) => `単体にATKx${(1.5 + lv*0.5).toFixed(1)}ダメージ` },
+            { id: 'w_a2', name: 'なぎ払い', type: 'active', cost: 8, gain: 0, ct: 3, maxLv: 5, target: 'all', desc: (lv) => `全体にATKx${(0.8 + lv*0.2).toFixed(1)}ダメージ` },
+            { id: 'w_s1', name: 'ウォークライ', type: 'support', cost: 10, gain: 0, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンATK+${20 + lv*10}%` },
+            { id: 'w_s2', name: '鉄の意志', type: 'support', cost: 5, gain: 0, ct: 4, maxLv: 5, target: 'self', desc: (lv) => `3ターンDEF+${20 + lv*10}%` },
+            { id: 'w_p1', name: '頑強', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `最大HP+${lv * 10}` },
+            { id: 'w_p2', name: '剛腕', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `STR+${lv * 2}` }
         ]
     },
     thief: { 
-        name: '盗賊', hp: 45, mp: 15, str: 5, vit: 4, dex: 8, int: 3, luk: 7, icon: 'fa-mask',
+        name: '盗賊', hp: 45, cp: 15, str: 5, vit: 4, dex: 8, int: 3, luk: 7, icon: 'fa-mask',
         skills: [
-            { id: 't_a1', name: '連続攻撃', type: 'active', cost: 6, ct: 2, maxLv: 5, target: 'single', desc: (lv) => `単体にATKx${(0.5 + lv*0.1).toFixed(1)}を2〜4回` },
-            { id: 't_a2', name: '不意打ち', type: 'active', cost: 8, ct: 3, maxLv: 5, target: 'single', desc: (lv) => `単体に防御無視ATKx${(1.0 + lv*0.3).toFixed(1)}` },
-            { id: 't_s1', name: '集中', type: 'support', cost: 10, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンDEX+${20 + lv*10}%` },
-            { id: 't_s2', name: '毒塗り', type: 'support', cost: 8, ct: 4, maxLv: 5, target: 'self', desc: (lv) => `3ターン攻撃時に毒(毎ターン${lv*2}ダメ)付与` },
-            { id: 't_p1', name: '急所狙い', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `LUK+${lv * 2}` },
-            { id: 't_p2', name: '瞬発力', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `DEX+${lv * 2}` }
+            { id: 't_a1', name: '連続攻撃', type: 'active', cost: 6, gain: 0, ct: 2, maxLv: 5, target: 'single', desc: (lv) => `単体にATKx${(0.5 + lv*0.1).toFixed(1)}を2〜4回` },
+            { id: 't_a2', name: '不意打ち', type: 'active', cost: 8, gain: 0, ct: 3, maxLv: 5, target: 'single', desc: (lv) => `単体に防御無視ATKx${(1.0 + lv*0.3).toFixed(1)}` },
+            { id: 't_s1', name: '集中', type: 'support', cost: 10, gain: 0, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンDEX+${20 + lv*10}%` },
+            { id: 't_s2', name: '毒塗り', type: 'support', cost: 8, gain: 0, ct: 4, maxLv: 5, target: 'self', desc: (lv) => `3ターン攻撃時に毒(毎ターン${lv*2}ダメ)付与` },
+            { id: 't_p1', name: '急所狙い', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `LUK+${lv * 2}` },
+            { id: 't_p2', name: '瞬発力', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `DEX+${lv * 2}` }
         ]
     },
     mage: { 
-        name: '魔術師',hp: 40, mp: 25, str: 2, vit: 3, dex: 5, int: 9, luk: 4, icon: 'fa-wand-magic-sparkles',
+        name: '魔術師',hp: 40, cp: 25, str: 2, vit: 3, dex: 5, int: 9, luk: 4, icon: 'fa-wand-magic-sparkles',
         skills: [
-            { id: 'm_a1', name: 'ファイア', type: 'active', cost: 8, ct: 2, maxLv: 5, target: 'all', desc: (lv) => `全体にINTx${(1.0 + lv*0.3).toFixed(1)}魔法ダメ` },
-            { id: 'm_a2', name: 'アイスランス', type: 'active', cost: 6, ct: 3, maxLv: 5, target: 'single', desc: (lv) => `単体にINTx${(1.5 + lv*0.5).toFixed(1)}魔法ダメ` },
-            { id: 'm_s1', name: '魔力覚醒', type: 'support', cost: 12, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンINT+${20 + lv*10}%` },
-            { id: 'm_s2', name: 'マナドレイン', type: 'support', cost: 0, ct: 4, maxLv: 5, target: 'single', desc: (lv) => `単体にINTx0.5ダメ＆MP${5 + lv*5}回復` },
-            { id: 'm_p1', name: '精神集中', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `最大MP+${lv * 5}` },
-            { id: 'm_p2', name: '賢者の知恵', type: 'passive', maxLv: 5, target: 'self', desc: (lv) => `INT+${lv * 2}` }
+            { id: 'm_a1', name: 'ファイア', type: 'active', cost: 8, gain: 0, ct: 2, maxLv: 5, target: 'all', desc: (lv) => `全体にINTx${(1.0 + lv*0.3).toFixed(1)}魔法ダメ` },
+            { id: 'm_a2', name: 'アイスランス', type: 'active', cost: 6, gain: 0, ct: 3, maxLv: 5, target: 'single', desc: (lv) => `単体にINTx${(1.5 + lv*0.5).toFixed(1)}魔法ダメ` },
+            { id: 'm_s1', name: '魔力覚醒', type: 'support', cost: 12, gain: 0, ct: 5, maxLv: 5, target: 'self', desc: (lv) => `3ターンINT+${20 + lv*10}%` },
+            { id: 'm_s2', name: 'マナドレイン', type: 'support', cost: 0, gain: 10, ct: 4, maxLv: 5, target: 'single', desc: (lv) => `単体にINTx0.5ダメ＆CP${5 + lv*5}回復` },
+            { id: 'm_p1', name: '精神集中', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `最大CP+${lv * 5}` },
+            { id: 'm_p2', name: '賢者の知恵', type: 'passive', cost: 0, gain: 0, maxLv: 5, target: 'self', desc: (lv) => `INT+${lv * 2}` }
         ]
     }
 };
 
 const RARITY = {
     common:    { name: 'コモン', color: 'text-gray-500', bg: 'bg-gray-100', border: 'border-gray-300', mult: 1, valMult: 1 },
-    uncommon:  { name: 'アンコモン', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-300', mult: 1.2, valMult: 1.5 },
-    rare:      { name: 'レア', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-300', mult: 1.5, valMult: 2.5 },
-    epic:      { name: 'エピック', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-300', mult: 2, valMult: 4 },
-    legendary: { name: 'レジェンダリー', color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-400', mult: 3, valMult: 8 }
+    uncommon:  { name: 'アンコモン', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-300', mult: 1.1, valMult: 1.2 },
+    rare:      { name: 'レア', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-300', mult: 1.3, valMult: 1.5 },
+    epic:      { name: 'エピック', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-300', mult: 1.5, valMult: 2.0 },
+    legendary: { name: 'レジェンダリー', color: 'text-yellow-500', bg: 'bg-yellow-50', border: 'border-yellow-400', mult: 1.8, valMult: 2.5 }
 };
 
 const ENEMY_TEMPLATES = [
@@ -136,6 +144,19 @@ const ENEMY_TEMPLATES = [
     { name: 'オーク', hp: 45, str: 8, vit: 5, icon: 'fa-pastafarianism', type: 'elite' },
     { name: 'デーモン', hp: 60, str: 10, vit: 4, icon: 'fa-ghost', type: 'elite' },
     { name: 'ドラゴン (BOSS)', hp: 150, str: 15, vit: 8, icon: 'fa-dragon', type: 'boss' }
+];
+
+const STAGES = [
+    { id: 1, name: '始まりの森' },
+    { id: 2, name: '静寂の洞窟' },
+    { id: 3, name: '忘却の廃都' },
+    { id: 4, name: '灼熱の地下道' },
+    { id: 5, name: '凍てつく回廊' },
+    { id: 6, name: '瘴気の深淵' },
+    { id: 7, name: '古代の遺跡' },
+    { id: 8, name: '幻影の迷宮' },
+    { id: 9, name: '暗黒の城塞' },
+    { id: 10, name: '白の尖塔' }
 ];
 
 // ==========================================
@@ -152,7 +173,7 @@ const State = {
     player: {
         job: null,
         level: 1, exp: 0, statPoints: 0, skillPoints: 1,
-        hp: 0, maxHp: 0, mp: 0, maxMp: 0,
+        hp: 0, maxHp: 0, cp: 0, maxCp: 0,
         gold: 0,
         block: 0,
         stats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
@@ -190,13 +211,13 @@ const Utils = {
             if (s.id === 'w_p2' && stat === 'str') bonus += lv * 2;
             if (s.id === 't_p1' && stat === 'luk') bonus += lv * 2;
             if (s.id === 't_p2' && stat === 'dex') bonus += lv * 2;
-            if (s.id === 'm_p1' && stat === 'maxMp') bonus += lv * 5;
+            if (s.id === 'm_p1' && stat === 'maxCp') bonus += lv * 5;
             if (s.id === 'm_p2' && stat === 'int') bonus += lv * 2;
         });
         return bonus;
     },
     getMaxHp: () => State.player.maxHp + (State.player.level * 2) + (State.player.addedStats.vit * 2) + Utils.getPassiveBonus('maxHp'),
-    getMaxMp: () => State.player.maxMp + (State.player.level * 1) + (State.player.addedStats.int * 1) + Utils.getPassiveBonus('maxMp'),
+    getMaxCp: () => State.player.maxCp + (State.player.level * 1) + (State.player.addedStats.int * 1) + Utils.getPassiveBonus('maxCp'),
     
     getAtk: () => {
         const str = Utils.getTotalStat('str');
@@ -238,11 +259,13 @@ const Utils = {
         let diffVal = newItem.value - currItem.value;
         if (diffVal > 0) html += `<span class="text-green-500 font-bold text-[10px] ml-1">▲${statName}${diffVal}</span>`;
         else if (diffVal < 0) html += `<span class="text-red-500 font-bold text-[10px] ml-1">▼${statName}${-diffVal}</span>`;
+        else html += `<span class="text-gray-400 font-bold text-[10px] ml-1">ー0</span>`;
 
         if (newItem.bonusStat === currItem.bonusStat) {
             let bDiff = newItem.bonusValue - currItem.bonusValue;
             if (bDiff > 0) html += `<span class="text-green-500 font-bold text-[10px] ml-1">▲${newItem.bonusStat.toUpperCase()}${bDiff}</span>`;
             else if (bDiff < 0) html += `<span class="text-red-500 font-bold text-[10px] ml-1">▼${newItem.bonusStat.toUpperCase()}${-bDiff}</span>`;
+            else html += `<span class="text-gray-400 font-bold text-[10px] ml-1">ー0</span>`;
         } else {
             html += `<span class="text-green-500 font-bold text-[10px] ml-1">▲${newItem.bonusStat.toUpperCase()}${newItem.bonusValue}</span>`;
             html += `<span class="text-red-500 font-bold text-[10px] ml-1">▼${currItem.bonusStat.toUpperCase()}${currItem.bonusValue}</span>`;
@@ -331,7 +354,7 @@ const ItemGen = {
             itemObj.maxAtk = Math.floor(baseMax * maxMult * rData.valMult) + Utils.rand(0, 2);
             itemObj.value = Math.floor((itemObj.minAtk + itemObj.maxAtk) / 2);
             
-            itemObj.hits = wType === 'sword' ? 2 : (wType === 'dagger' ? 4 : 1);
+            itemObj.hits = wType === 'sword' ? 2 : (wType === 'dagger' ? 3 : 1);
             itemObj.target = wType === 'staff' ? 'all' : 'single';
             
         } else if (actualType === 'armor') {
@@ -417,15 +440,15 @@ const EnemyLogic = {
 
         // マジックシールド判定 (魔術師)
         if (actualDmg > 0 && State.combat.buffs.magicShield > 0) {
-            if (State.player.mp >= actualDmg) {
-                State.player.mp -= actualDmg;
-                Utils.log(`マジックシールドが ${actualDmg} ダメージをMPで吸収!`);
-                Utils.showTextAnim('player-hp-bar', `MP-${actualDmg}`, 'block');
+            if (State.player.cp >= actualDmg) {
+                State.player.cp -= actualDmg;
+                Utils.log(`マジックシールドが ${actualDmg} ダメージをCPで吸収!`);
+                Utils.showTextAnim('player-hp-bar', `CP-${actualDmg}`, 'block');
                 actualDmg = 0;
             } else {
-                actualDmg -= State.player.mp;
-                Utils.log(`マジックシールドが壊れた! MP枯渇!`);
-                State.player.mp = 0;
+                actualDmg -= State.player.cp;
+                Utils.log(`マジックシールドが壊れた! CP枯渇!`);
+                State.player.cp = 0;
                 State.combat.buffs.magicShield = 0;
             }
         }
@@ -556,7 +579,7 @@ const Game = {
         State.player = {
             job: null,
             level: 1, exp: 0, statPoints: 0, skillPoints: 1,
-            hp: 0, maxHp: 0, mp: 0, maxMp: 0,
+            hp: 0, maxHp: 0, cp: 0, maxCp: 0,
             gold: 0, block: 0,
             stats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
             addedStats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
@@ -592,10 +615,10 @@ const Game = {
         
         State.player.stats = { str: job.str, vit: job.vit, dex: job.dex, int: job.int, luk: job.luk };
         State.player.maxHp = job.hp;
-        State.player.maxMp = job.mp;
+        State.player.maxCp = job.cp;
         
         State.player.hp = Utils.getMaxHp();
-        State.player.mp = Utils.getMaxMp();
+        State.player.cp = Utils.getMaxCp();
 
         // 初期スキルの自動習得
         const firstActive = job.skills.find(s => s.type === 'active');
@@ -607,11 +630,26 @@ const Game = {
 
     updateHeader: () => {
         if (State.inDungeon) {
-            document.getElementById('floor-num').innerText = `Stage ${State.stage} - B${State.floor}`;
+            const stageName = STAGES[State.stage - 1]?.name || '未知の領域';
+            document.getElementById('floor-num').innerText = `${stageName} - B${State.floor}`;
         } else {
             document.getElementById('floor-num').innerText = `拠点`;
         }
         document.getElementById('gold-amount').innerText = State.player.gold;
+
+        // バッジ更新
+        const sp = State.player.skillPoints;
+        const stp = State.player.statPoints;
+        const badgeSkill = document.getElementById('badge-skill');
+        const badgeStatus = document.getElementById('badge-status');
+        if(badgeSkill) {
+            if(sp > 0) { badgeSkill.innerText = sp; badgeSkill.classList.remove('hidden'); }
+            else { badgeSkill.classList.add('hidden'); }
+        }
+        if(badgeStatus) {
+            if(stp > 0) { badgeStatus.innerText = stp; badgeStatus.classList.remove('hidden'); }
+            else { badgeStatus.classList.add('hidden'); }
+        }
     },
 
     // --- Stage Select ---
@@ -620,34 +658,44 @@ const Game = {
         Game.updateHeader();
         
         let html = `
-            <div class="flex-1 flex flex-col p-4 bg-gray-50">
-                <div class="text-center mb-6 mt-4">
+            <div class="flex-1 flex flex-col p-4 bg-gray-50 overflow-hidden">
+                <div class="text-center mb-6 mt-4 shrink-0">
                     <i class="fa-solid fa-chess-rook text-4xl text-gray-800 mb-2"></i>
                     <h2 class="text-xl font-bold">White Spire</h2>
                     <p class="text-sm text-gray-500">挑戦するステージを選択</p>
                 </div>
-                <div class="flex-1 flex flex-col space-y-3 max-w-sm mx-auto w-full overflow-y-auto hide-scrollbar">
+                <div class="flex-1 overflow-y-auto space-y-3 max-w-sm mx-auto w-full hide-scrollbar pb-8">
         `;
         
-        const MAX_STAGE = 5;
-        for (let i = 1; i <= MAX_STAGE; i++) {
+        STAGES.forEach((stage, idx) => {
+            const i = idx + 1;
             const isUnlocked = i <= State.maxUnlockedStage;
+            const isCleared = i < State.maxUnlockedStage;
             if (isUnlocked) {
                 html += `
                     <button onclick="Game.startStage(${i})" class="w-full p-4 border rounded-lg shadow-sm bg-white hover:bg-gray-50 flex justify-between items-center transition-colors">
-                        <div class="font-bold text-gray-800">ステージ ${i}</div>
-                        <i class="fa-solid fa-play text-blue-500"></i>
+                        <div class="font-bold text-gray-800 text-left">
+                            <div class="text-[10px] text-gray-500">ステージ ${i}</div>
+                            ${stage.name}
+                        </div>
+                        <div class="flex items-center">
+                            ${isCleared ? '<span class="text-[10px] font-bold text-yellow-500 mr-2 border border-yellow-500 px-1 rounded bg-yellow-50">CLEAR!</span>' : ''}
+                            <i class="fa-solid fa-play text-blue-500"></i>
+                        </div>
                     </button>
                 `;
             } else {
                 html += `
                     <div class="w-full p-4 border rounded-lg bg-gray-200 text-gray-400 flex justify-between items-center opacity-70">
-                        <div class="font-bold">ステージ ${i}</div>
+                        <div class="font-bold text-left">
+                            <div class="text-[10px]">ステージ ${i}</div>
+                            ${stage.name}
+                        </div>
                         <i class="fa-solid fa-lock text-gray-400"></i>
                     </div>
                 `;
             }
-        }
+        });
         
         html += `</div></div>`;
         document.getElementById('main-view').innerHTML = html;
@@ -658,7 +706,7 @@ const Game = {
         State.floor = 1;
         State.inDungeon = true;
         State.player.hp = Utils.getMaxHp();
-        State.player.mp = Utils.getMaxMp();
+        State.player.cp = 0; // ステージ開始時0スタート
         
         State.combat.cooldowns = {}; // ステージ突入時はCTリセット
         
@@ -695,11 +743,13 @@ const Game = {
     },
 
     renderMap: () => {
+        const stageName = STAGES[State.stage - 1]?.name || '未知の領域';
         let html = `
             <div class="flex-1 flex flex-col p-4">
                 <div class="text-center mb-8 mt-4">
-                    <h2 class="text-xl font-bold">ステージ ${State.stage} - フロア ${State.floor}</h2>
-                    <p class="text-sm text-gray-500">進む道を選択してください</p>
+                    <div class="text-xs text-gray-500 mb-1">ステージ ${State.stage}</div>
+                    <h2 class="text-xl font-bold">${stageName} - フロア ${State.floor}</h2>
+                    <p class="text-sm text-gray-500 mt-2">進む道を選択してください</p>
                 </div>
                 <div class="flex-1 flex flex-col justify-center space-y-4 max-w-xs mx-auto w-full">
         `;
@@ -735,12 +785,12 @@ const Game = {
     // --- Events ---
     execFountain: () => {
         State.player.hp = Utils.getMaxHp();
-        State.player.mp = Utils.getMaxMp();
+        State.player.cp = Utils.getMaxCp();
         let html = `
             <div class="flex-1 flex flex-col justify-center items-center p-6 text-center">
                 <i class="fa-solid fa-faucet text-6xl text-green-500 mb-6"></i>
                 <h2 class="text-2xl font-bold mb-2">回復の泉</h2>
-                <p class="text-gray-600 mb-8">清らかな水が傷を癒やした。<br>HPとMPが全回復した！</p>
+                <p class="text-gray-600 mb-8">清らかな水が傷を癒やした。<br>HPとCPが全回復した！</p>
                 <button onclick="Game.nextFloor()" class="px-6 py-3 bg-blue-600 text-white rounded font-bold w-full max-w-xs shadow">次へ進む</button>
             </div>
         `;
@@ -939,9 +989,10 @@ const Game = {
 
         const p = State.player;
         const maxHp = Utils.getMaxHp();
-        const maxMp = Utils.getMaxMp();
+        const maxCp = Utils.getMaxCp();
         const hpPercent = Math.max(0, (p.hp / maxHp) * 100);
-        const mpPercent = Math.max(0, (p.mp / maxMp) * 100);
+        const cpPercent = Math.max(0, (p.cp / maxCp) * 100);
+        const expPercent = Math.max(0, (p.exp / (p.level * 50)) * 100);
         const def = Utils.getDef();
         const atkRange = Utils.getAtkRange();
         
@@ -973,11 +1024,19 @@ const Game = {
             </div>
             
             <div class="flex items-center text-xs">
-                <div class="w-8 font-bold text-blue-600">MP</div>
-                <div class="flex-1 bg-gray-200 h-2.5 rounded mx-2 relative overflow-hidden">
-                    <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${mpPercent}%"></div>
+                <div class="w-8 font-bold text-gray-800">CP</div>
+                <div class="flex-1 bg-gray-200 border border-gray-300 h-2.5 rounded mx-2 relative overflow-hidden" id="player-cp-bar">
+                    <div class="bg-white h-full transition-all duration-300" style="width: ${cpPercent}%"></div>
                 </div>
-                <div class="w-16 text-right">${p.mp}/${maxMp}</div>
+                <div class="w-16 text-right">${p.cp}/${maxCp}</div>
+            </div>
+            
+            <div class="flex items-center text-xs mt-1">
+                <div class="w-8 font-bold text-yellow-600">EXP</div>
+                <div class="flex-1 bg-gray-200 h-2.5 rounded mx-2 relative overflow-hidden">
+                    <div class="bg-yellow-400 h-full transition-all duration-300" style="width: ${expPercent}%"></div>
+                </div>
+                <div class="w-16 text-right">${p.exp}/${p.level * 50}</div>
             </div>
         `;
     },
@@ -1005,7 +1064,7 @@ const Game = {
         let defendDesc = 'そのターン中、防御力(DEF)に応じたブロック（シールド）を得る。';
         if (jobName === '魔術師') {
             defendName = 'ﾏｼﾞｯｸｼｰﾙﾄﾞ';
-            defendDesc = '3ターンの間、受けるダメージをHPの代わりにMPで肩代わりする。';
+            defendDesc = '3ターンの間、受けるダメージをHPの代わりにCPで肩代わりする。';
         }
         if (jobName === '盗賊') {
             defendName = '見切り';
@@ -1025,7 +1084,7 @@ const Game = {
                     <i class="fa-solid fa-shield mb-1"></i> <span class="text-[10px] truncate w-full text-center">${defendName}</span>
                 </button>
                 <button onclick="Game.usePotion()" class="${btnClass} bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100">
-                    <i class="fa-solid fa-flask mb-1"></i> 回復<span class="text-[9px] font-normal mt-0.5">(10MP)</span>
+                    <i class="fa-solid fa-flask mb-1"></i> 回復<span class="text-[9px] font-normal mt-0.5">(10CP)</span>
                 </button>
                 <button onclick="Game.endPlayerTurn()" class="${btnClass} bg-gray-800 text-white border-gray-900 hover:bg-gray-700">
                     <i class="fa-solid fa-forward-step mb-1"></i> ターン終了
@@ -1039,7 +1098,7 @@ const Game = {
             skills.forEach(s => {
                 const lv = State.player.skillLevels[s.id];
                 const ct = State.combat.cooldowns[s.id] || 0;
-                const canUse = State.player.mp >= s.cost && ct === 0;
+                const canUse = State.player.cp >= s.cost && ct === 0;
                 const skillBtnClass = canUse ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed';
                 
                 html += `
@@ -1047,7 +1106,7 @@ const Game = {
                         <i class="fa-solid fa-circle-info absolute top-1 right-1 text-gray-400 hover:text-blue-500 text-[10px] z-10" onclick="event.stopPropagation(); Game.showInfoModal('${s.name}', '${s.desc(lv)}')"></i>
                         <div class="leading-tight pr-4">
                             <div class="font-bold text-xs">${s.name} <span class="text-[9px] font-normal opacity-70">Lv${lv}</span></div>
-                            <div class="text-[9px] opacity-80">${s.cost}MP</div>
+                            <div class="text-[9px] opacity-80">消費:${s.cost} 獲得:${s.gain}</div>
                         </div>
                         <div class="text-xs font-bold pl-1 mt-1">
                             ${ct > 0 ? `<span class="text-red-500">CT:${ct}</span>` : `<i class="fa-solid fa-play opacity-50"></i>`}
@@ -1062,16 +1121,18 @@ const Game = {
     },
 
     castSkill: (skillId) => {
-        if (State.combat.enemies[State.combat.currentTargetIdx].hp <= 0) {
+        let target = State.combat.enemies[State.combat.currentTargetIdx];
+        if (!target || target.hp <= 0) {
             State.combat.currentTargetIdx = Game.getFirstAliveEnemyIdx();
+            target = State.combat.enemies[State.combat.currentTargetIdx];
         }
-        const target = State.combat.enemies[State.combat.currentTargetIdx];
-        if (!target) return;
+        if (!target || target.hp <= 0) return;
 
         const s = State.player.job.skills.find(x => x.id === skillId);
         const lv = State.player.skillLevels[s.id];
         
-        State.player.mp -= s.cost;
+        State.player.cp -= s.cost;
+        State.player.cp = Math.min(Utils.getMaxCp(), State.player.cp + s.gain);
         State.combat.cooldowns[s.id] = s.ct;
         Game.renderCommands();
 
@@ -1134,9 +1195,9 @@ const Game = {
             const dmg = Math.max(1, Math.floor(int * 0.5));
             const actual = EnemyLogic.applyDamageToEnemy(target, dmg, true);
             const heal = 5 + lv * 5;
-            State.player.mp = Math.min(Utils.getMaxMp(), State.player.mp + heal);
-            Utils.log(`${s.name}！ ${actual}ダメを与え MPが ${heal} 回復！`);
-            Utils.showTextAnim('player-hp-bar', `+${heal}MP`, 'block');
+            State.player.cp = Math.min(Utils.getMaxCp(), State.player.cp + heal);
+            Utils.log(`${s.name}！ ${actual}ダメを与え CPが ${heal} 回復！`);
+            Utils.showTextAnim('player-hp-bar', `+${heal}CP`, 'block');
         }
 
         if (State.combat.enemies[State.combat.currentTargetIdx] && State.combat.enemies[State.combat.currentTargetIdx].hp <= 0) {
@@ -1151,9 +1212,9 @@ const Game = {
 
     usePotion: () => {
         if (!State.combat.isPlayerTurn) return;
-        if(State.player.mp < 10) { Utils.log("MPが足りません"); return; }
+        if(State.player.cp < 10) { Utils.log("CPが足りません"); return; }
         
-        State.player.mp -= 10;
+        State.player.cp -= 10;
         Game.renderCommands();
 
         const heal = Math.floor(Utils.getTotalStat('int') * 2) + 10;
@@ -1178,7 +1239,7 @@ const Game = {
             Utils.log(`防御態勢！ (ブロック +${defVal})`);
         } else if (jobName === '魔術師') {
             State.combat.buffs.magicShield = 3;
-            Utils.log(`マジックシールド！ (3ターンの間、HPの代わりにMPが減る)`);
+            Utils.log(`マジックシールド！ (3ターンの間、HPの代わりにCPが減る)`);
         } else if (jobName === '盗賊') {
             State.combat.buffs.evasion = 1;
             Utils.log(`見切り！ (1ターンの間、敵の攻撃を高確率で完全回避)`);
@@ -1193,10 +1254,11 @@ const Game = {
     executePlayerAction: (actionType) => {
         if (!State.combat.isPlayerTurn) return;
 
-        if (State.combat.enemies[State.combat.currentTargetIdx].hp <= 0) {
+        let target = State.combat.enemies[State.combat.currentTargetIdx];
+        if (!target || target.hp <= 0) {
             State.combat.currentTargetIdx = Game.getFirstAliveEnemyIdx();
+            target = State.combat.enemies[State.combat.currentTargetIdx];
         }
-        const target = State.combat.enemies[State.combat.currentTargetIdx];
         if (!target || target.hp <= 0) return;
 
         if (actionType === 'attack') {
@@ -1220,6 +1282,16 @@ const Game = {
                 const actualDmg = EnemyLogic.applyDamageToEnemy(target, dmg);
                 Utils.log(`${target.name}に ${actualDmg} のダメージ！`);
             }
+
+            // CP獲得処理
+            let cpGain = 0;
+            const jobName = State.player.job.name;
+            if (jobName === '戦士') cpGain = 3;
+            else if (jobName === '魔術師') cpGain = 5;
+            else if (jobName === '盗賊') cpGain = 2;
+            
+            State.player.cp = Math.min(Utils.getMaxCp(), State.player.cp + cpGain);
+            Utils.showTextAnim('player-info-block', `+${cpGain}CP`, 'heal');
 
             State.combat.attacksLeft--;
             Game.renderCommands();
@@ -1281,14 +1353,14 @@ const Game = {
         if (State.player.exp >= reqExp) {
             State.player.exp -= reqExp;
             State.player.level++;
-            State.player.statPoints += 5;
+            State.player.statPoints += 3;
             State.player.skillPoints += 1;
             State.player.hp = Utils.getMaxHp();
-            State.player.mp = Utils.getMaxMp();
+            State.player.cp = Utils.getMaxCp();
             levelUpHtml = `
                 <div class="w-full mb-4 border border-green-300 bg-green-50 rounded p-3 text-center anim-shake">
                     <div class="text-green-600 font-bold mb-1"><i class="fa-solid fa-arrow-up"></i> レベルアップ！ Lv.${State.player.level}</div>
-                    <div class="text-[10px] text-gray-600">ステータスポイント+5 / スキルポイント+1</div>
+                    <div class="text-[10px] text-gray-600">ステータスポイント+3 / スキルポイント+1</div>
                 </div>
             `;
         }
@@ -1382,10 +1454,11 @@ const Game = {
     gameOver: () => {
         State.inDungeon = false;
         Game.updateHeader();
+        const stageName = STAGES[State.stage - 1]?.name || '';
         let html = `
             <div class="flex-1 flex flex-col justify-center items-center p-6 bg-red-900 text-white">
                 <h2 class="text-4xl font-bold mb-4">GAME OVER</h2>
-                <p class="mb-8">ステージ ${State.stage} - フロア ${State.floor} で倒れた...</p>
+                <p class="mb-8">${stageName} - B${State.floor} で倒れた...</p>
                 <button onclick="Game.renderStageSelect()" class="px-6 py-3 bg-white text-red-900 font-bold rounded shadow">拠点(ステージ選択)へ戻る</button>
             </div>
         `;
@@ -1398,12 +1471,13 @@ const Game = {
         }
         State.inDungeon = false;
         Game.updateHeader();
+        const stageName = STAGES[State.stage - 1]?.name || `ステージ ${State.stage}`;
         
         let html = `
             <div class="flex-1 flex flex-col justify-center items-center p-6 bg-yellow-50 text-gray-800">
                 <i class="fa-solid fa-crown text-6xl text-yellow-500 mb-6"></i>
                 <h2 class="text-3xl font-bold mb-4 text-yellow-600">STAGE CLEAR!</h2>
-                <p class="mb-8 text-center font-bold">ステージ ${State.stage} を制覇した！</p>
+                <p class="mb-8 text-center font-bold">${stageName} を制覇した！</p>
                 <button onclick="Game.renderStageSelect()" class="px-6 py-3 bg-yellow-500 text-white font-bold rounded shadow">拠点(ステージ選択)へ</button>
             </div>
         `;
@@ -1472,7 +1546,7 @@ const Game = {
                             <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
                                 <div class="flex-1">
                                     <div class="font-bold text-sm text-gray-800">${s.name} <span class="text-blue-600 text-xs ml-1">Lv.${lv}/${s.maxLv}</span></div>
-                                    <div class="text-[10px] text-gray-500 mb-0.5"><span class="font-bold">${s.type.toUpperCase()}</span> ${s.cost ? `| Cost: ${s.cost}MP ` : ''}${s.ct ? `| CT: ${s.ct}` : ''}</div>
+                                    <div class="text-[10px] text-gray-500 mb-0.5"><span class="font-bold">${s.type.toUpperCase()}</span> | 消費:${s.cost} 獲得:${s.gain} ${s.ct ? `| CT: ${s.ct}` : ''}</div>
                                     <div class="text-[11px] text-gray-700 leading-tight">${s.desc(lv === 0 ? 1 : lv)}</div>
                                 </div>
                                 <button onclick="Game.levelUpSkill('${s.id}')" class="ml-2 w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded font-bold transition-opacity disabled:opacity-30 disabled:bg-gray-400" ${!canUp ? 'disabled' : ''}>+</button>
@@ -1493,6 +1567,7 @@ const Game = {
         if (State.player.skillPoints > 0) {
             State.player.skillPoints--;
             State.player.skillLevels[skillId] = (State.player.skillLevels[skillId] || 0) + 1;
+            Game.updateHeader();
             Game.showSkillMenu();
         }
     },
@@ -1501,6 +1576,7 @@ const Game = {
         State.player.skillLevels = {};
         State.player.skillPoints = State.player.level;
         Game.initPlayer(jobKey, true);
+        Game.updateHeader();
         Game.showSkillMenu();
     },
 
@@ -1531,6 +1607,7 @@ const Game = {
             
             <div class="flex justify-between items-center mb-4 text-sm bg-green-50 p-2 rounded">
                 <span class="font-bold text-green-800">ステータスポイント: <span class="text-lg">${p.statPoints}</span></span>
+                <button onclick="Game.resetStat()" class="px-2 py-1 bg-gray-500 text-white rounded text-[10px] font-bold shadow hover:bg-gray-600">リセット</button>
             </div>
 
             <div class="space-y-2 text-sm bg-white border p-3 rounded shadow-sm mb-4">
@@ -1539,14 +1616,14 @@ const Game = {
                     <span class="text-sm text-gray-500 font-normal">EXP: ${p.exp} / ${p.level * 50}</span>
                 </div>
                 <div class="flex justify-between"><span>HP:</span> <span class="font-bold">${p.hp} / ${Utils.getMaxHp()}</span></div>
-                <div class="flex justify-between"><span>MP:</span> <span class="font-bold">${p.mp} / ${Utils.getMaxMp()}</span></div>
+                <div class="flex justify-between"><span>CP:</span> <span class="font-bold">${p.cp} / ${Utils.getMaxCp()}</span></div>
                 <div class="flex justify-between"><span>所持金:</span> <span class="font-bold text-yellow-600">${p.gold} G</span></div>
             </div>
 
             <div class="bg-white border p-3 rounded shadow-sm mb-4">
                 <div class="flex justify-between items-center mb-2">
                     <h4 class="font-bold text-xs text-gray-500">基礎能力値振り分け</h4>
-                    <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500 cursor-pointer" onclick="Game.showInfoModal('ステータス詳細', 'STR: 物理攻撃力(ATK)に影響します。<br>VIT: 物理防御力(DEF)と最大HP(+2)に影響します。<br>DEX: 盗賊の見切り回避率や一部スキルに影響します。<br>INT: 魔法ダメージと最大MP(+1)に影響します。<br>LUK: アイテムドロップ時のレア度が高くなりやすくなります。')"></i>
+                    <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500 cursor-pointer" onclick="Game.showInfoModal('ステータス詳細', 'STR: 物理攻撃力(ATK)に影響します。<br>VIT: 物理防御力(DEF)と最大HP(+2)に影響します。<br>DEX: 盗賊の見切り回避率や一部スキルに影響します。<br>INT: 魔法ダメージと最大CP(+1)に影響します。<br>LUK: アイテムドロップ時のレア度が高くなりやすくなります。')"></i>
                 </div>
                 <div class="grid grid-cols-2 gap-x-2 gap-y-1">
                     ${renderStatRow('STR', 'str', 'text-red-500')}
@@ -1570,11 +1647,28 @@ const Game = {
         if (State.player.statPoints > 0) {
             State.player.statPoints--;
             State.player.addedStats[statKey]++;
-            // VIT/INTに振った場合は最大HP/MPが増えるので現在値も少し回復させるか、最大値だけ上げる
+            // VIT/INTに振った場合は最大HP/CPが増えるので現在値も少し回復させるか、最大値だけ上げる
             if (statKey === 'vit') State.player.hp += 2;
-            if (statKey === 'int') State.player.mp += 1;
+            if (statKey === 'int') State.player.cp += 1;
+            Game.updateHeader();
             Game.showStatus();
             if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+        }
+    },
+
+    resetStat: () => {
+        if(confirm('ステータスポイントをリセットしますか？')) {
+            const p = State.player;
+            let totalAdded = p.addedStats.str + p.addedStats.vit + p.addedStats.dex + p.addedStats.int + p.addedStats.luk;
+            if (totalAdded > 0) {
+                p.statPoints += totalAdded;
+                p.addedStats = { str: 0, vit: 0, dex: 0, int: 0, luk: 0 };
+                p.hp = Math.min(p.hp, Utils.getMaxHp());
+                p.cp = Math.min(p.cp, Utils.getMaxCp());
+                Game.updateHeader();
+                Game.showStatus();
+                if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+            }
         }
     },
 
@@ -1694,6 +1788,7 @@ window.onload = Game.init;
 </script>
 </body>
 </html>
+
 
 
 
