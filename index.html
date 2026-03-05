@@ -1513,10 +1513,15 @@ const Game = {
             if (enemy.intent) {
                 const intentName = enemy.intent.name || (enemy.intent.type === 'attack' ? '通常攻撃' : '行動');
                 const intentDesc = enemy.intent.desc || (enemy.intent.value > 0 ? `予測ダメージ: ${enemy.intent.value}` : '行動情報なし');
+                const specialIntentTypes = ['buffSelf', 'statusAttack', 'powerAttack', 'heal'];
+                const isSpecialIntent = specialIntentTypes.includes(enemy.intent.type);
+                const intentLabel = (!isSpecialIntent && Number.isFinite(enemy.intent.value))
+                    ? `${intentName} ${enemy.intent.value}`
+                    : intentName;
                 intentHtml = `
                     <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 border rounded shadow text-[10px] font-bold ${enemy.intent.color} whitespace-nowrap z-10 flex items-center gap-1">
-                        <i class="fa-solid ${enemy.intent.icon}"></i><span>${intentName}</span>
-                        <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500" onclick="event.stopPropagation(); Game.showInfoModal('${intentName.replace(/'/g, '&#39;')}', '${intentDesc.replace(/'/g, '&#39;')}')"></i>
+                        <i class="fa-solid ${enemy.intent.icon}"></i><span>${intentLabel}</span>
+                        <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500" onclick="event.stopPropagation(); Game.showInfoModal('${intentLabel.replace(/'/g, '&#39;')}', '${intentDesc.replace(/'/g, '&#39;')}')"></i>
                     </div>
                 `;
             }
@@ -2633,6 +2638,5 @@ window.onload = Game.init;
 </script>
 </body>
 </html>
-
 
 
