@@ -55,30 +55,39 @@
 
     <!-- 下部メニュー -->
     <footer id="bottom-menu" class="h-16 bg-white border-t flex justify-around items-center shrink-0 hidden z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <button onclick="Game.showMap()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 w-1/5">
+        <button onclick="Game.showMap()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 w-1/6">
             <i class="fa-solid fa-map mb-1 text-lg"></i><span class="text-[10px]">マップ</span>
         </button>
-        <button onclick="Game.showSkillMenu()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-l border-r border-gray-100 w-1/5">
+        <button onclick="Game.showSkillMenu()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-l border-r border-gray-100 w-1/6">
             <div class="relative inline-block">
                 <i class="fa-solid fa-star mb-1 text-lg"></i>
                 <span id="badge-skill" class="absolute -top-1.5 -right-2.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow border border-white hidden"></span>
             </div>
             <span class="text-[10px]">スキル</span>
         </button>
-        <button onclick="Game.showStatus()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/5">
+        <button onclick="Game.showStatus()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/6">
             <div class="relative inline-block">
                 <i class="fa-solid fa-user mb-1 text-lg"></i>
                 <span id="badge-status" class="absolute -top-1.5 -right-2.5 bg-red-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow border border-white hidden"></span>
             </div>
             <span class="text-[10px]">ステータス</span>
         </button>
-        <button onclick="Game.showInventory()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/5 relative">
+        <button onclick="Game.showInventory()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 border-r border-gray-100 w-1/6 relative">
             <i class="fa-solid fa-toolbox mb-1 text-lg"></i><span class="text-[10px]">装備/鞄</span>
         </button>
-        <button onclick="Game.showLogs()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 w-1/5">
+        <button onclick="Game.showLogs()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 w-1/6">
             <i class="fa-solid fa-file-lines mb-1 text-lg"></i><span class="text-[10px]">ログ</span>
         </button>
+        <button onclick="Game.toggleOptionMenu()" class="flex flex-col items-center text-gray-500 hover:text-blue-600 w-1/6 border-l border-gray-100">
+            <i class="fa-solid fa-gear mb-1 text-lg"></i><span class="text-[10px]">オプション</span>
+        </button>
     </footer>
+
+    <div id="option-mini-menu" class="absolute bottom-16 right-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-2 hidden w-44">
+        <button onclick="Game.manualSave(1); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded"><i class="fa-solid fa-floppy-disk mr-2"></i>スロット1にセーブ</button>
+        <button onclick="Game.manualSave(2); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded"><i class="fa-solid fa-floppy-disk mr-2"></i>スロット2にセーブ</button>
+        <button onclick="Game.showHelpPlaceholder(); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded"><i class="fa-solid fa-circle-question mr-2"></i>ヘルプ(仮)</button>
+    </div>
 
     <!-- モーダル・オーバーレイ -->
     <div id="overlay" class="absolute inset-0 bg-black/50 z-50 hidden flex justify-center items-center p-4" onclick="if(event.target === this) Game.closeModal()">
@@ -298,7 +307,8 @@ const State = {
     baseMerchantRefreshAvailable: true
 };
 
-const SAVE_KEY = 'white_spire_save_v1';
+const SAVE_SLOT_KEYS = { 1: 'white_spire_save_slot1_v1', 2: 'white_spire_save_slot2_v1' };
+const ACTIVE_SAVE_SLOT_KEY = 'white_spire_active_slot_v1';
 
 const StorageAdapter = {
     save: (key, value) => localStorage.setItem(key, value),
@@ -380,14 +390,20 @@ const SaveService = {
             state: snapshot
         };
     },
-    saveToLocal: () => {
+    normalizeSlot: (slot) => (slot === 2 ? 2 : 1),
+    getSlotKey: (slot) => SAVE_SLOT_KEYS[SaveService.normalizeSlot(slot)],
+    getActiveSlot: () => SaveService.normalizeSlot(Number(StorageAdapter.load(ACTIVE_SAVE_SLOT_KEY) || 1)),
+    setActiveSlot: (slot) => StorageAdapter.save(ACTIVE_SAVE_SLOT_KEY, String(SaveService.normalizeSlot(slot))),
+    saveToLocal: (slot = SaveService.getActiveSlot()) => {
+        const normalized = SaveService.normalizeSlot(slot);
         const payload = SaveService.buildPayload();
-        StorageAdapter.save(SAVE_KEY, JSON.stringify(payload));
+        StorageAdapter.save(SaveService.getSlotKey(normalized), JSON.stringify(payload));
+        SaveService.setActiveSlot(normalized);
         return payload;
     },
-    loadFromLocal: () => {
+    loadFromLocal: (slot = SaveService.getActiveSlot()) => {
         try {
-            const raw = StorageAdapter.load(SAVE_KEY);
+            const raw = StorageAdapter.load(SaveService.getSlotKey(slot));
             if (!raw) return null;
             const parsed = JSON.parse(raw);
             if (!parsed || parsed.schemaVersion !== SaveService.schemaVersion || !parsed.state) return null;
@@ -402,13 +418,14 @@ const SaveService = {
         if (!parsed || parsed.schemaVersion !== SaveService.schemaVersion || !parsed.state) {
             throw new Error('セーブデータ形式が不正です');
         }
-        StorageAdapter.save(SAVE_KEY, JSON.stringify(parsed));
+        const slot = SaveService.getActiveSlot();
+        StorageAdapter.save(SaveService.getSlotKey(slot), JSON.stringify(parsed));
         SaveService.applyState(parsed.state);
         return parsed;
     },
-    clearLocal: () => StorageAdapter.remove(SAVE_KEY),
-    getLastSavedAt: () => {
-        const data = SaveService.loadFromLocal();
+    clearLocal: (slot = SaveService.getActiveSlot()) => StorageAdapter.remove(SaveService.getSlotKey(slot)),
+    getLastSavedAt: (slot = SaveService.getActiveSlot()) => {
+        const data = SaveService.loadFromLocal(slot);
         return data?.savedAt || null;
     }
 };
@@ -1149,10 +1166,11 @@ const EnemyLogic = {
 const Game = {
     _onModalConfirm: null,
     _autosaveTimer: null,
+    _activeSaveSlot: 1,
 
     autosave: () => {
         try {
-            SaveService.saveToLocal();
+            SaveService.saveToLocal(Game._activeSaveSlot);
         } catch (e) {
             console.warn('Autosave failed:', e);
         }
@@ -1165,6 +1183,22 @@ const Game = {
             Game.autosave();
         }, 400);
     },
+
+    toggleOptionMenu: () => {
+        const menu = document.getElementById('option-mini-menu');
+        if (!menu) return;
+        menu.classList.toggle('hidden');
+    },
+
+    closeOptionMenu: () => {
+        const menu = document.getElementById('option-mini-menu');
+        if (menu) menu.classList.add('hidden');
+    },
+
+    showHelpPlaceholder: () => {
+        Game.showAlertModal({ title: 'ヘルプ(仮)', message: 'ヘルプ機能は今後追加予定です。', buttonText: '閉じる' });
+    },
+
 
     initializeNewGameState: () => {
         SaveService.applyState(SaveService.createInitialState());
@@ -1183,7 +1217,8 @@ const Game = {
     },
 
     init: () => {
-        const loaded = SaveService.loadFromLocal();
+        Game._activeSaveSlot = SaveService.getActiveSlot();
+        const loaded = SaveService.loadFromLocal(Game._activeSaveSlot);
         if (loaded?.state) {
             SaveService.applyState(loaded.state);
         } else {
@@ -1194,6 +1229,16 @@ const Game = {
         document.getElementById('header-floor').classList.remove('hidden');
         document.getElementById('header-gold').classList.remove('hidden');
         document.getElementById('bottom-menu').classList.remove('hidden');
+        document.getElementById('app').addEventListener('click', (event) => {
+            if (!event.target.closest('#option-mini-menu') && !event.target.closest('button[onclick="Game.toggleOptionMenu()"]')) {
+                Game.closeOptionMenu();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') Game.autosaveDebounced();
+        });
+        window.addEventListener('pagehide', () => Game.autosave());
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') Game.autosaveDebounced();
@@ -2346,6 +2391,7 @@ const Game = {
 
     // --- Modal Menus ---
     showModal: (contentHtml) => {
+        Game.closeOptionMenu();
         document.getElementById('modal-content').innerHTML = `
             <button onclick="Game.closeModal()" class="absolute top-2 right-3 text-gray-400 hover:text-gray-800 text-xl"><i class="fa-solid fa-xmark"></i></button>
             ${contentHtml}
@@ -2359,6 +2405,7 @@ const Game = {
     },
 
     showMap: () => {
+        Game.closeOptionMenu();
         if (document.getElementById('combat-block')) {
             return; // 戦闘中は移動不可
         }
@@ -2543,15 +2590,19 @@ const Game = {
     },
 
     showLogs: () => {
-        const savedAt = SaveService.getLastSavedAt();
-        const savedAtLabel = savedAt ? new Date(savedAt).toLocaleString('ja-JP') : '未保存';
+        const savedAt1 = SaveService.getLastSavedAt(1);
+        const savedAt2 = SaveService.getLastSavedAt(2);
+        const savedAt1Label = savedAt1 ? new Date(savedAt1).toLocaleString('ja-JP') : '未保存';
+        const savedAt2Label = savedAt2 ? new Date(savedAt2).toLocaleString('ja-JP') : '未保存';
         let html = `
             <h3 class="font-bold text-lg mb-4 border-b pb-2"><i class="fa-solid fa-file-lines mr-2"></i>冒険の記録</h3>
             <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
                 <div class="font-bold mb-2"><i class="fa-solid fa-floppy-disk mr-1"></i>セーブ管理</div>
-                <div class="mb-2">最終保存: ${savedAtLabel}</div>
+                <div class="mb-1">スロット1最終保存: ${savedAt1Label}</div>
+                <div class="mb-2">スロット2最終保存: ${savedAt2Label}</div>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="Game.manualSave()" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ</button>
+                    <button onclick="Game.manualSave(1)" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ1</button>
+                    <button onclick="Game.manualSave(2)" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ2</button>
                     <button onclick="Game.exportSaveData()" class="px-3 py-2 bg-emerald-600 text-white rounded font-bold text-xs hover:bg-emerald-700"><i class="fa-solid fa-file-export mr-1"></i>書き出し</button>
                     <label class="px-3 py-2 bg-amber-500 text-white rounded font-bold text-xs hover:bg-amber-600 text-center cursor-pointer"><i class="fa-solid fa-file-import mr-1"></i>読み込み
                         <input id="save-import-input" type="file" accept="application/json" class="hidden" onchange="Game.importSaveData(event)">
@@ -2571,14 +2622,16 @@ const Game = {
         }, 10);
     },
 
-    manualSave: () => {
-        Game.autosave();
-        Game.showAlertModal({ title: 'セーブ完了', message: '現在の進行を保存しました。', buttonText: 'OK' });
+    manualSave: (slot = Game._activeSaveSlot) => {
+        const normalized = SaveService.normalizeSlot(slot);
+        SaveService.saveToLocal(normalized);
+        Game._activeSaveSlot = normalized;
+        Game.showAlertModal({ title: 'セーブ完了', message: `スロット${normalized}に進行を保存しました。`, buttonText: 'OK' });
     },
 
     exportSaveData: () => {
         try {
-            const payload = SaveService.saveToLocal();
+            const payload = SaveService.saveToLocal(Game._activeSaveSlot);
             const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2598,6 +2651,7 @@ const Game = {
         reader.onload = () => {
             try {
                 SaveService.importFromText(String(reader.result || ''));
+                Game._activeSaveSlot = SaveService.getActiveSlot();
                 Game.updateHeader();
                 Game.renderStageSelect();
                 Game.closeModal();
@@ -2618,7 +2672,10 @@ const Game = {
             confirmText: '初期化する',
             cancelText: 'やめる',
             onConfirm: () => {
-                SaveService.clearLocal();
+                SaveService.clearLocal(1);
+                SaveService.clearLocal(2);
+                Game._activeSaveSlot = 1;
+                SaveService.setActiveSlot(1);
                 Game.initializeNewGameState();
                 Game.updateHeader();
                 Game.renderStageSelect();
