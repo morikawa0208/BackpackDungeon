@@ -84,8 +84,7 @@
     </footer>
 
     <div id="option-mini-menu" class="absolute bottom-16 right-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-2 hidden w-44">
-        <button onclick="Game.manualSave(1); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded"><i class="fa-solid fa-floppy-disk mr-2"></i>スロット1にセーブ</button>
-        <button onclick="Game.manualSave(2); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded"><i class="fa-solid fa-floppy-disk mr-2"></i>スロット2にセーブ</button>
+        <button onclick="Game.showSaveMenu(); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50 rounded"><i class="fa-solid fa-floppy-disk mr-2"></i>セーブメニュー</button>
         <button onclick="Game.showHelpPlaceholder(); Game.closeOptionMenu();" class="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded"><i class="fa-solid fa-circle-question mr-2"></i>ヘルプ(仮)</button>
     </div>
 
@@ -1234,11 +1233,6 @@ const Game = {
                 Game.closeOptionMenu();
             }
         });
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') Game.autosaveDebounced();
-        });
-        window.addEventListener('pagehide', () => Game.autosave());
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') Game.autosaveDebounced();
@@ -2587,6 +2581,31 @@ const Game = {
                 }
             }
         });
+    },
+
+    showSaveMenu: () => {
+        const savedAt1 = SaveService.getLastSavedAt(1);
+        const savedAt2 = SaveService.getLastSavedAt(2);
+        const savedAt1Label = savedAt1 ? new Date(savedAt1).toLocaleString('ja-JP') : '未保存';
+        const savedAt2Label = savedAt2 ? new Date(savedAt2).toLocaleString('ja-JP') : '未保存';
+        const html = `
+            <h3 class="font-bold text-lg mb-4 border-b pb-2"><i class="fa-solid fa-floppy-disk mr-2"></i>セーブメニュー</h3>
+            <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                <div class="mb-1">スロット1最終保存: ${savedAt1Label}</div>
+                <div class="mb-2">スロット2最終保存: ${savedAt2Label}</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="Game.manualSave(1)" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ1</button>
+                    <button onclick="Game.manualSave(2)" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ2</button>
+                    <button onclick="Game.exportSaveData()" class="px-3 py-2 bg-emerald-600 text-white rounded font-bold text-xs hover:bg-emerald-700"><i class="fa-solid fa-file-export mr-1"></i>書き出し</button>
+                    <label class="px-3 py-2 bg-amber-500 text-white rounded font-bold text-xs hover:bg-amber-600 text-center cursor-pointer"><i class="fa-solid fa-file-import mr-1"></i>読み込み
+                        <input id="save-import-input" type="file" accept="application/json" class="hidden" onchange="Game.importSaveData(event)">
+                    </label>
+                    <button onclick="Game.resetSaveData()" class="px-3 py-2 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700"><i class="fa-solid fa-trash mr-1"></i>初期化</button>
+                </div>
+            </div>
+            <button onclick="Game.closeModal()" class="mt-2 px-4 py-2 bg-gray-800 text-white rounded font-bold w-full shadow">閉じる</button>
+        `;
+        Game.showModal(html);
     },
 
     showLogs: () => {
