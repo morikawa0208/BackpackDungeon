@@ -298,6 +298,121 @@ const State = {
     baseMerchantRefreshAvailable: true
 };
 
+const SAVE_KEY = 'white_spire_save_v1';
+
+const StorageAdapter = {
+    save: (key, value) => localStorage.setItem(key, value),
+    load: (key) => localStorage.getItem(key),
+    remove: (key) => localStorage.removeItem(key)
+};
+
+const SaveService = {
+    schemaVersion: 1,
+    createInitialState: () => ({
+        stage: 1,
+        maxUnlockedStage: 1,
+        inDungeon: false,
+        floor: 1,
+        nodes: [],
+        logs: [],
+        fullLogs: [],
+        player: {
+            job: null,
+            level: 1, exp: 0, statPoints: 0, skillPoints: 1,
+            hp: 0, maxHp: 0, cp: 0, maxCp: 0,
+            gold: 0,
+            block: 0,
+            stats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
+            addedStats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
+            skillLevels: {},
+            equip: { weapon: null, armor: null, accessory: null },
+            inventory: {
+                equipment: [],
+                consumables: [],
+                materials: [],
+                imprints: [],
+                sealedImprints: { rough: 0, refined: 0, gleaming: 0 }
+            }
+        },
+        combat: {
+            enemies: [],
+            turn: 1,
+            isPlayerTurn: true,
+            currentTargetIdx: 0,
+            attacksLeft: 0,
+            cooldowns: {},
+            playerStatuses: [],
+            buffs: {},
+            defendUsed: false
+        },
+        merchantOptions: [],
+        baseMerchantOptions: [],
+        baseMerchantRefreshAvailable: true
+    }),
+    applyState: (loadedState) => {
+        const next = SaveService.createInitialState();
+        Object.assign(next, loadedState || {});
+        next.player = Object.assign(next.player, loadedState?.player || {});
+        next.player.stats = Object.assign(next.player.stats, loadedState?.player?.stats || {});
+        next.player.addedStats = Object.assign(next.player.addedStats, loadedState?.player?.addedStats || {});
+        next.player.skillLevels = loadedState?.player?.skillLevels || {};
+        next.player.equip = Object.assign(next.player.equip, loadedState?.player?.equip || {});
+        next.player.inventory = Object.assign(next.player.inventory, loadedState?.player?.inventory || {});
+        next.player.inventory.sealedImprints = Object.assign(next.player.inventory.sealedImprints, loadedState?.player?.inventory?.sealedImprints || {});
+        next.combat = Object.assign(next.combat, loadedState?.combat || {});
+        Object.keys(State).forEach(key => { delete State[key]; });
+        Object.assign(State, next);
+        if (State.player.job && typeof State.player.job === 'string' && JOBS[State.player.job]) {
+            State.player.job = JOBS[State.player.job];
+        }
+        Utils.ensureInventoryStructure();
+        ['weapon', 'armor', 'accessory'].forEach(slot => {
+            if (State.player.equip[slot]) Utils.ensureItemImprintSlots(State.player.equip[slot]);
+        });
+        State.player.inventory.equipment.forEach(item => Utils.ensureItemImprintSlots(item));
+    },
+    buildPayload: () => {
+        const snapshot = JSON.parse(JSON.stringify(State));
+        snapshot.player.job = State.player.job ? Object.keys(JOBS).find(key => JOBS[key] === State.player.job) : null;
+        return {
+            schemaVersion: SaveService.schemaVersion,
+            savedAt: Date.now(),
+            state: snapshot
+        };
+    },
+    saveToLocal: () => {
+        const payload = SaveService.buildPayload();
+        StorageAdapter.save(SAVE_KEY, JSON.stringify(payload));
+        return payload;
+    },
+    loadFromLocal: () => {
+        try {
+            const raw = StorageAdapter.load(SAVE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || parsed.schemaVersion !== SaveService.schemaVersion || !parsed.state) return null;
+            return parsed;
+        } catch (e) {
+            console.warn('Save load failed:', e);
+            return null;
+        }
+    },
+    importFromText: (text) => {
+        const parsed = JSON.parse(text);
+        if (!parsed || parsed.schemaVersion !== SaveService.schemaVersion || !parsed.state) {
+            throw new Error('セーブデータ形式が不正です');
+        }
+        StorageAdapter.save(SAVE_KEY, JSON.stringify(parsed));
+        SaveService.applyState(parsed.state);
+        return parsed;
+    },
+    clearLocal: () => StorageAdapter.remove(SAVE_KEY),
+    getLastSavedAt: () => {
+        const data = SaveService.loadFromLocal();
+        return data?.savedAt || null;
+    }
+};
+
 // ==========================================
 // 3. ユーティリティ・計算ロジック
 // ==========================================
@@ -1032,6 +1147,33 @@ const EnemyLogic = {
 // 6. メインゲームコントローラー
 // ==========================================
 const Game = {
+    _onModalConfirm: null,
+    _autosaveTimer: null,
+
+    autosave: () => {
+        try {
+            SaveService.saveToLocal();
+        } catch (e) {
+            console.warn('Autosave failed:', e);
+        }
+    },
+
+    autosaveDebounced: () => {
+        if (Game._autosaveTimer) clearTimeout(Game._autosaveTimer);
+        Game._autosaveTimer = setTimeout(() => {
+            Game._autosaveTimer = null;
+            Game.autosave();
+        }, 400);
+    },
+
+    initializeNewGameState: () => {
+        SaveService.applyState(SaveService.createInitialState());
+        Game.initPlayer('warrior');
+        State.player.equip.weapon = { id: 'w0', name: '錆びた剣', type: 'weapon', weaponType: 'sword', rarity: 'common', minAtk: 2, maxAtk: 4, hits: 2, target: 'single', value: 3, bonusStat: 'str', bonusValue: 0, price: 1, imprintSlots: { capacity: 1, equippedImprintIds: [] } };
+        State.player.equip.armor = { id: 'a0', name: '古びた服', type: 'armor', rarity: 'common', value: 1, bonusStat: 'vit', bonusValue: 0, price: 1, imprintSlots: { capacity: 1, equippedImprintIds: [] } };
+        Utils.ensureInventoryStructure();
+    },
+
     validateBossDefinitions: () => {
         STAGES.forEach(stage => {
             if (!BOSS_DEFINITIONS[stage.id]) {
@@ -1041,35 +1183,22 @@ const Game = {
     },
 
     init: () => {
-        State.maxUnlockedStage = 1;
-        State.fullLogs = [];
-        State.player = {
-            job: null,
-            level: 1, exp: 0, statPoints: 0, skillPoints: 1,
-            hp: 0, maxHp: 0, cp: 0, maxCp: 0,
-            gold: 0, block: 0,
-            stats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
-            addedStats: { str: 0, vit: 0, dex: 0, int: 0, luk: 0 },
-            skillLevels: {},
-            equip: { weapon: null, armor: null, accessory: null },
-            inventory: {
-                equipment: [],
-                consumables: [],
-                materials: [],
-                imprints: [],
-                sealedImprints: { rough: 0, refined: 0, gleaming: 0 }
-            }
-        };
-        
-        Game.initPlayer('warrior');
-        
-        State.player.equip.weapon = { id: 'w0', name: '錆びた剣', type: 'weapon', weaponType: 'sword', rarity: 'common', minAtk: 2, maxAtk: 4, hits: 2, target: 'single', value: 3, bonusStat: 'str', bonusValue: 0, price: 1, imprintSlots: { capacity: 1, equippedImprintIds: [] } };
-        State.player.equip.armor = { id: 'a0', name: '古びた服', type: 'armor', rarity: 'common', value: 1, bonusStat: 'vit', bonusValue: 0, price: 1, imprintSlots: { capacity: 1, equippedImprintIds: [] } };
-        Utils.ensureInventoryStructure();
+        const loaded = SaveService.loadFromLocal();
+        if (loaded?.state) {
+            SaveService.applyState(loaded.state);
+        } else {
+            Game.initializeNewGameState();
+            Game.autosave();
+        }
 
         document.getElementById('header-floor').classList.remove('hidden');
         document.getElementById('header-gold').classList.remove('hidden');
         document.getElementById('bottom-menu').classList.remove('hidden');
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') Game.autosaveDebounced();
+        });
+        window.addEventListener('pagehide', () => Game.autosave());
 
         Game.validateBossDefinitions();
         
@@ -1194,6 +1323,7 @@ const Game = {
         Game.updateHeader();
         Game.generateNodes();
         Game.renderMap();
+        Game.autosaveDebounced();
     },
 
     generateNodes: () => {
@@ -1318,6 +1448,7 @@ const Game = {
         State.baseMerchantOptions = Game.generateBaseMerchantOptions();
         State.baseMerchantRefreshAvailable = false;
         Game.updateBaseMerchantUI();
+        Game.autosaveDebounced();
     },
 
     updateBaseMerchantUI: () => {
@@ -1399,6 +1530,7 @@ const Game = {
             State.baseMerchantOptions[idx] = null;
             Game.updateHeader();
             Game.updateBaseMerchantUI();
+            Game.autosaveDebounced();
         }
     },
 
@@ -1478,6 +1610,7 @@ const Game = {
             State.merchantOptions[idx] = null;
             Game.updateHeader();
             Game.updateMerchantUI();
+            Game.autosaveDebounced();
         }
     },
 
@@ -2171,6 +2304,7 @@ const Game = {
         Game.updateHeader();
         Game.generateNodes();
         Game.renderMap();
+        Game.autosaveDebounced();
     },
 
     gameOver: () => {
@@ -2186,6 +2320,7 @@ const Game = {
             </div>
         `;
         document.getElementById('main-view').innerHTML = html;
+        Game.autosaveDebounced();
     },
 
     stageClear: () => {
@@ -2206,6 +2341,7 @@ const Game = {
             </div>
         `;
         document.getElementById('main-view').innerHTML = html;
+        Game.autosaveDebounced();
     },
 
     // --- Modal Menus ---
@@ -2294,6 +2430,7 @@ const Game = {
             State.player.skillLevels[skillId] = (State.player.skillLevels[skillId] || 0) + 1;
             Game.updateHeader();
             Game.showSkillMenu();
+            Game.autosaveDebounced();
         }
     },
 
@@ -2378,6 +2515,7 @@ const Game = {
             Game.updateHeader();
             Game.showStatus();
             if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+            Game.autosaveDebounced();
         }
     },
 
@@ -2398,14 +2536,29 @@ const Game = {
                     Game.updateHeader();
                     Game.showStatus();
                     if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+                    Game.autosaveDebounced();
                 }
             }
         });
     },
 
     showLogs: () => {
+        const savedAt = SaveService.getLastSavedAt();
+        const savedAtLabel = savedAt ? new Date(savedAt).toLocaleString('ja-JP') : '未保存';
         let html = `
             <h3 class="font-bold text-lg mb-4 border-b pb-2"><i class="fa-solid fa-file-lines mr-2"></i>冒険の記録</h3>
+            <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                <div class="font-bold mb-2"><i class="fa-solid fa-floppy-disk mr-1"></i>セーブ管理</div>
+                <div class="mb-2">最終保存: ${savedAtLabel}</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="Game.manualSave()" class="px-3 py-2 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700"><i class="fa-solid fa-floppy-disk mr-1"></i>手動セーブ</button>
+                    <button onclick="Game.exportSaveData()" class="px-3 py-2 bg-emerald-600 text-white rounded font-bold text-xs hover:bg-emerald-700"><i class="fa-solid fa-file-export mr-1"></i>書き出し</button>
+                    <label class="px-3 py-2 bg-amber-500 text-white rounded font-bold text-xs hover:bg-amber-600 text-center cursor-pointer"><i class="fa-solid fa-file-import mr-1"></i>読み込み
+                        <input id="save-import-input" type="file" accept="application/json" class="hidden" onchange="Game.importSaveData(event)">
+                    </label>
+                    <button onclick="Game.resetSaveData()" class="px-3 py-2 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700"><i class="fa-solid fa-trash mr-1"></i>初期化</button>
+                </div>
+            </div>
             <div class="space-y-1 text-xs max-h-[60vh] overflow-y-auto p-2 bg-gray-50 border rounded hide-scrollbar" id="full-log-container">
                 ${State.fullLogs.length > 0 ? State.fullLogs.map(l => `<div class="border-b border-gray-200 pb-1 mb-1">${l}</div>`).join('') : '<div class="text-gray-400 text-center py-4">まだ記録がありません</div>'}
             </div>
@@ -2416,6 +2569,62 @@ const Game = {
             const el = document.getElementById('full-log-container');
             if (el) el.scrollTop = el.scrollHeight;
         }, 10);
+    },
+
+    manualSave: () => {
+        Game.autosave();
+        Game.showAlertModal({ title: 'セーブ完了', message: '現在の進行を保存しました。', buttonText: 'OK' });
+    },
+
+    exportSaveData: () => {
+        try {
+            const payload = SaveService.saveToLocal();
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `white_spire_save_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            Game.showAlertModal({ title: '書き出し失敗', message: 'セーブデータの書き出しに失敗しました。', buttonText: '閉じる' });
+        }
+    },
+
+    importSaveData: (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                SaveService.importFromText(String(reader.result || ''));
+                Game.updateHeader();
+                Game.renderStageSelect();
+                Game.closeModal();
+                Game.showAlertModal({ title: '読み込み完了', message: 'セーブデータを読み込みました。', buttonText: 'OK' });
+            } catch (e) {
+                Game.showAlertModal({ title: '読み込み失敗', message: 'セーブデータ形式が不正です。', buttonText: '閉じる' });
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    resetSaveData: () => {
+        Game.showConfirmModal({
+            title: 'セーブ初期化確認',
+            message: '保存データを削除して新しい冒険を開始します。よろしいですか？',
+            confirmText: '初期化する',
+            cancelText: 'やめる',
+            onConfirm: () => {
+                SaveService.clearLocal();
+                Game.initializeNewGameState();
+                Game.updateHeader();
+                Game.renderStageSelect();
+                Game.autosave();
+            }
+        });
     },
 
     addSealedImprints: (category, amount = 1) => {
@@ -2462,6 +2671,7 @@ const Game = {
         }
         State.player.inventory.sealedImprints[category] -= actual;
         Game.showImprintLab();
+        Game.autosaveDebounced();
     },
 
     equipImprint: (slotName, imprintId) => {
@@ -2844,6 +3054,7 @@ const Game = {
         
         Game.showInventory();
         if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+        Game.autosaveDebounced();
     },
 
     unequip: (slot) => {
@@ -2853,6 +3064,7 @@ const Game = {
             State.player.equip[slot] = null;
             Game.showInventory();
             if(document.getElementById('player-info-block')) Game.renderPlayerInfo();
+            Game.autosaveDebounced();
         }
     },
 
@@ -2864,6 +3076,7 @@ const Game = {
         State.player.inventory.equipment.splice(invIdx, 1);
         Game.showInventory();
         Game.updateHeader();
+        Game.autosaveDebounced();
     }
 };
 
